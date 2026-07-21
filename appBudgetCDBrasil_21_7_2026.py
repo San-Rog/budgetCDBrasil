@@ -65,7 +65,6 @@ class operationFiles():
         cursor = connMemory.cursor()
         fieldsDb = [allFieldsDb[z] for z in range(zFieldsDb) if z in [1, 12, 14, 15, 25, 26]]
         for fielDb in fieldsDb: 
-            st.write(fielDb)
             query = f"SELECT DISTINCT {fielDb} FROM {_self.tableDb} ORDER BY {fielDb} ASC"
             df = pd.read_sql(query, connMemory)
             try:
@@ -76,10 +75,6 @@ class operationFiles():
         connMemory.close()
         connDisk.close()
         return dictFilters
-        
-class screenWork():
-    def __init__(self):
-        pass
         
 class main():
     def __init__(self):
@@ -94,6 +89,8 @@ class main():
         self.sqlCols = None
         self.sqlFilters = {}
         self.initiationSql()
+        objWindow = windowStream(self.sqlFilters)
+        objWindow.insertWidget()
         
     def setPage(self):
         st.set_page_config(
@@ -127,4 +124,3 @@ if __name__ == '__main__':
         st.session_state[wordKeys[0]] = 0
     main()
     
-#https://budgetcdbrasil-4rtegiwypo57t9cuzzacwr.streamlit.app/
