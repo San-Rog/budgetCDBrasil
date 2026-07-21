@@ -8,31 +8,22 @@ import zstandard as zstd
 
 class operationFiles():
     def __init__(self):    
-        pass 
-
+        self.tableDb = tableDb
+    
     @st.cache_data    
     def mergeFilesZsdt(_self, dirDbZsdt, fileDbZsdt):
-        filesZsdt = sorted([f for f in os.listdir(dirDbZsdt)])
         filesZsdt = sorted([f for f in os.listdir(dirDbZsdt) if f.lower().find('fake') < 0])
         if not filesZsdt:
             return False
         nTasks = len(filesZsdt)
-        st.write(nTasks)
-        barProg = st.progress(0.0)
-        textProg = st.empty()
         with open(fileDbZsdt, "wb") as fOut:
             for n in range(nTasks):
                 file = filesZsdt[n]
                 pathOut = os.path.join(dirDbZsdt, file)
                 with open(pathOut, "rb") as f_chunk:
                     fOut.write(f_chunk.read())
-                textProg.text(f"Progresso: {n} de {nTasks} concluído")
-                fracao = n / nTasks
-                barProg.progress(fracao)
-            barProg.empty()
-            textProg.empty()
         return True
-
+    
     @st.cache_data
     def readFileSqlZsdt(_self, fileDbZsdt, fileDb):
         dctx = zstd.ZstdDecompressor()
@@ -43,38 +34,40 @@ class operationFiles():
         with open(fileDb, 'wb') as f:
             f.write(dbStream.getvalue())
         return fileDb
-
-    @st.cache_data    
-    def selectSql(_self, fileDb, tableDb):
-        conn = sqlite3.connect(fileDb)
-        query = f"SELECT * FROM {tableDb} LIMIT 100"
-        data = pd.read_sql(query, conn)
-        return data
-
+    
     @st.cache_data
-    def columnSql(_self, fileDb, tableDb):
+    def columnSql(_self, fileDb):
         connDisk = sqlite3.connect(fileDb)
         connMemory = sqlite3.connect(':memory:')
         connDisk.backup(connMemory)
         cursor = connMemory.cursor()
-        cursor.execute(f"PRAGMA table_info({tableDb})")
+        cursor.execute(f"PRAGMA table_info({_self.tableDb})")
         colunas = [info[1] for info in cursor.fetchall()]
         connMemory.close()
         connDisk.close()
         return colunas
-
+        
     @st.cache_data
-    def distinctFields(_self, fileDb, tableDb, fielDb):
+    def distinctFields(_self, fileDb, allFieldsDb):
+        zFieldsDb = len(allFieldsDb)
+        dictFilters = {}
         connDisk = sqlite3.connect(fileDb)
         connMemory = sqlite3.connect(':memory:')
         connDisk.backup(connMemory)
         cursor = connMemory.cursor()
-        query = f"SELECT DISTINCT {fielDb} FROM {tableDb} ORDER BY {fielDb}"
-        data = pd.read_sql(query, connMemory)
+        fieldsDb = [allFieldsDb[z] for z in range(zFieldsDb) if z in [1, 12, 14, 15, 25, 26]]
+        for fielDb in fieldsDb: 
+            query = f"SELECT DISTINCT {fielDb} FROM {_self.tableDb} ORDER BY {fielDb} ASC"
+            df = pd.read_sql(query, connMemory)
+            try:
+                data = sorted([int(field) for field in df[fielDb].tolist()])
+            except:
+                data = sorted(df[fielDb].tolist())
+            dictFilters[fielDb] = data
         connMemory.close()
         connDisk.close()
-        return data
-
+        return dictFilters
+        
 class main():
     def __init__(self):
         self.dirDbZsdtSt = r"C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_chunks_Github"
@@ -83,24 +76,14 @@ class main():
         self.isRunning()
         self.fileDbZsdt = "cota_parlamentar_CD_scraping.db.zst"
         self.fileDb = "cota_parlamentar_CD_scraping.db"
-        self.table = "gastos_cota_CD"
-        objOperat = operationFiles()
-        try:
-            with st.spinner("Atualizando o banco de dados"):
-                verifyZsdt = objOperat.mergeFilesZsdt(self.dirDbZsdt, self.fileDbZsdt)
-                if verifyZsdt:
-                    st.markdown("Consolidador de SQLite Local")
-                    tempDbFile = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
-                    dataSql = objOperat.selectSql(tempDbFile, self.table) 
-                    st.dataframe(dataSql)
-                    cols = objOperat.columnSql(tempDbFile, self.table)
-                    st.write(cols)
-                    ind = objOperat.distinctFields(tempDbFile, self.table, cols[15])
-                    st.dataframe(ind)
-
-        except Exception as error:
-            st.error(f'Erro na abertura do app:{error}')
-
+        self.tableDb = "gastos_cota_CD"
+        self.sqlRead = None
+        self.sqlCols = None
+        self.sqlFilters = {}
+        self.initiationSql()
+        objWindow = windowStream(self.sqlFilters)
+        objWindow.insertWidget()
+        
     def setPage(self):
         st.set_page_config(
             page_title='Cotas parlamentares/Câmara dos Deputados',
@@ -109,14 +92,25 @@ class main():
             initial_sidebar_state=None, 
             menu_items=None
         ) 
-
+        
     def isRunning(self):
         if os.path.exists(self.dirDbZsdtSt):
             self.dirDbZsdt = self.dirDbZsdtSt
         else:
             self.dirDbZsdt = self.dirDbZsdtGit
-
+            
+    def initiationSql(self):
+        objOperat = operationFiles(self.tableDb)
+        with st.spinner("Atualizando o banco de dados"):
+            verifyZsdt = objOperat.mergeFilesZsdt(self.dirDbZsdt, self.fileDbZsdt)
+            if verifyZsdt:
+                self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
+                self.sqlCols = objOperat.columnSql(self.sqlRead)
+                self.sqlFilters = objOperat.distinctFields(self.sqlRead, self.sqlCols)    
+        
 if __name__ == '__main__':
+    global wordKeys
+    wordKeys = ['count']
+    if wordKeys[0] not in st.session_state:
+        st.session_state[wordKeys[0]] = 0
     main()
-
-#https://budgetcdbrasil-4rtegiwypo57t9cuzzacwr.streamlit.app/
