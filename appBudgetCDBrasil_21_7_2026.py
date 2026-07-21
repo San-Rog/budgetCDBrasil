@@ -11,8 +11,9 @@ class windowStream():
         self.filters = filters
         
     def insertWidget(self):
-        for filter in self.filters:
-            st.write(filter)
+        for fil, ter in self.filters.items():
+            st.write(fil)
+            st.write(ter)
         
 class operationFiles():
     def __init__(self, tableDb):    
@@ -124,3 +125,4 @@ if __name__ == '__main__':
         st.session_state[wordKeys[0]] = 0
     main()
     
+#https://budgetcdbrasil-4rtegiwypo57t9cuzzacwr.streamlit.app/
