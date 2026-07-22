@@ -20,8 +20,8 @@ class windowStream():
         if all([year is not None, uf is not None]):
             objOperat = operationFiles(self.tableDb) 
             results = objOperat.searchFields(self.fileDb, self.keys, 0, -1, year, uf)
-            optResults = [result[12] for result in results]
-            colDf.selectbox(label='Nome', options= [optResults], width="stretch")
+            optResults = [result[15] for result in results]
+            colDf.selectbox(label='Nome', options= optResults, width="stretch")
 
 class operationFiles():
     def __init__(self, tableDb):    
@@ -115,7 +115,6 @@ class main():
         self.initiationSql()
         objWindow = windowStream(self.sqlFilters, self.fileDb, self.tableDb)
         objWindow.insertWidget()
-        st.write(self.sqlCols)
         
     def setPage(self):
         st.set_page_config(
