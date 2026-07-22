@@ -37,11 +37,11 @@ class windowStream():
         if all([uf is not None, uf.strip() != '']):
             with colDf:
                 st.markdown('Deputados federais')
-                st.selectbox(label='Nome', options=[], width="stretch", label_visibility="collapsed")
-        #    objOperat = operationFiles(self.tableDb) 
-        #    results = objOperat.searchFields(self.fileDb, self.keys, 0, -1, year, uf)
-        #    optResults = sorted(list(set([result[15] for result in results])))
-        #    colDf.selectbox(label='Nome', options= optResults, width="stretch")
+                colDf.selectbox(label='Nome', options=[], width="stretch", label_visibility="collapsed")
+            objOperat = operationFiles(self.tableDb) 
+            results = objOperat.searchFields(self.fileDb, self.keys, 0, -1, year, uf)
+            #optResults = sorted(list(set([result[15] for result in results])))
+            #colDf.selectbox(label='Nome', options= optResults, width="stretch")
 
 class operationFiles():
     def __init__(self, tableDb):    
@@ -133,6 +133,7 @@ class main():
         self.sqlCols = None
         self.sqlFilters = {}
         self.initiationSql()
+        st.session_state[wordKeys[0]] += 1
         objWindow = windowStream(self.sqlFilters, self.fileDb, self.tableDb)
         objWindow.insertWidget()
         
@@ -162,12 +163,10 @@ class main():
                 st.write(self.sqlCols)
         
 if __name__ == '__main__':
-    try:
-        main()
-    except:
-        pass
-    finally:
-        st.cache_data.clear()
-        
+    global wordKeys
+    wordKeys = ['count']
+    if wordKeys[0] not in st.session_state:
+        st.session_state[wordKeys[0]] = 0
+    main()
     
 #https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
