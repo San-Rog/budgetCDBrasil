@@ -7,14 +7,22 @@ import time
 import zstandard as zstd
 
 class windowStream():
-    def __init__(self, filters):
+    def __init__(self, filters, fileDb, tableDb):
         self.filters = filters
-        
+        self.keys = sorted(list(filters.keys()))
+        self.fileDb = fileDb
+        self.tableDb = tableDb
+                
     def insertWidget(self):
-        for fil, ter in self.filters.items():
-            st.write(fil)
-            st.write(ter)
-        
+        colYear, colUf, colDf = st.columns([3, 3, 20])
+        year = colYear.selectbox(label='Exercício', options= self.filters[self.keys[0]], width="stretch")
+        uf = colUf.selectbox(label='UF', options= self.filters[self.keys[-1]], width="stretch")
+        if all([year is not None, uf is not None]):
+            objOperat = operationFiles(self.tableDb) 
+            results = objOperat.searchFields(self.fileDb, self.keys, 0, -1, year, uf)
+            optResults = [result[12] for result in results]
+            colDf.selectbox(label='Nome', options= [optResults], width="stretch")
+
 class operationFiles():
     def __init__(self, tableDb):    
         self.tableDb = tableDb
@@ -76,6 +84,21 @@ class operationFiles():
         connMemory.close()
         connDisk.close()
         return dictFilters
+    
+    @st.cache_data
+    def searchFields(_self, fileDb, keys, posOne, posTwo, valOne, valTwo):
+        fieldOne = keys[posOne]
+        fieldTwo = keys[posTwo]        
+        connDisk = sqlite3.connect(fileDb)
+        connMemory = sqlite3.connect(':memory:')
+        cursor = connMemory.cursor()
+        connDisk.backup(connMemory)
+        query = f"SELECT * FROM {_self.tableDb} WHERE {fieldOne} = ? AND {fieldTwo} = ?"
+        cursor.execute(query, (valOne, valTwo))
+        results = cursor.fetchall()
+        connMemory.close()
+        connDisk.close() 
+        return results
         
 class main():
     def __init__(self):
@@ -90,8 +113,9 @@ class main():
         self.sqlCols = None
         self.sqlFilters = {}
         self.initiationSql()
-        objWindow = windowStream(self.sqlFilters)
+        objWindow = windowStream(self.sqlFilters, self.fileDb, self.tableDb)
         objWindow.insertWidget()
+        st.write(self.sqlCols)
         
     def setPage(self):
         st.set_page_config(
@@ -113,7 +137,6 @@ class main():
         with st.spinner("Atualizando o banco de dados"):
             verifyZsdt = objOperat.mergeFilesZsdt(self.dirDbZsdt, self.fileDbZsdt)
             if verifyZsdt:
-                st.markdown("Colunas e filtros")
                 self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
                 self.sqlCols = objOperat.columnSql(self.sqlRead)
                 self.sqlFilters = objOperat.distinctFields(self.sqlRead, self.sqlCols)    
@@ -125,4 +148,4 @@ if __name__ == '__main__':
         st.session_state[wordKeys[0]] = 0
     main()
     
-#https://budgetcdbrasil-4rtegiwypo57t9cuzzacwr.streamlit.app/
+#https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
