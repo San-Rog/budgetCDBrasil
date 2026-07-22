@@ -1,10 +1,9 @@
+import streamlit as st
+import sqlite3
+import pandas as pd
 import os
 import io
 import time
-import sqlite3
-import calendar
-import pandas as pd
-import streamlit as st
 import zstandard as zstd
 
 class windowStream():
@@ -16,9 +15,9 @@ class windowStream():
                 
     def insertWidget(self):
         colYear, colUf, colDf = st.columns([13, 3, 20])
-        optMonths = self.filters[self.keys[2]]
+        optMonths = self.filters[self.keys[1]]
         optYears = self.filters[self.keys[0]]  
-        optUfs = self.filters[self.keys[-1]]
+        optUfs = self.filters[self.keys[2]]
         optUfs.insert(0, '')
         with colYear:
             st.markdown('Datas início e término')
@@ -33,21 +32,17 @@ class windowStream():
                                             label_visibility="collapsed")
         with colUf:
             st.markdown('UF')
-            uf = st.selectbox(label='UF', options=self.filters[self.keys[-1]], width="stretch", label_visibility="collapsed")
+            uf = st.selectbox(label='UF', options=self.filters[self.keys[2]], width="stretch", label_visibility="collapsed")
         if all([uf is not None, uf.strip() != '']):
             with colDf:
                 st.markdown('Deputados federais')
                 colDf.selectbox(label='Nome', options=[], width="stretch", label_visibility="collapsed")
-            #objOperat = operationFiles(self.tableDb) 
-            #results = objOperat.searchFields(self.fileDb, self.keys, 0, -1, year, uf)
-            #optResults = sorted(list(set([result[15] for result in results])))
-            #colDf.selectbox(label='Nome', options= optResults, width="stretch")
 
 class operationFiles():
     def __init__(self, tableDb):    
         self.tableDb = tableDb
     
-    st.cache_resource    
+    @st.cache_data    
     def mergeFilesZsdt(_self, dirDbZsdt, fileDbZsdt):
         filesZsdt = sorted([f for f in os.listdir(dirDbZsdt) if f.lower().find('fake') < 0])
         if not filesZsdt:
@@ -61,7 +56,7 @@ class operationFiles():
                     fOut.write(f_chunk.read())
         return True
     
-    st.cache_resource
+    @st.cache_data
     def readFileSqlZsdt(_self, fileDbZsdt, fileDb):
         dctx = zstd.ZstdDecompressor()
         with open(fileDbZsdt, "rb") as compressFile:
@@ -72,8 +67,7 @@ class operationFiles():
             f.write(dbStream.getvalue())
         return fileDb
     
-    st.cache_resource
-
+    @st.cache_data
     def columnSql(_self, fileDb):
         connDisk = sqlite3.connect(fileDb)
         connMemory = sqlite3.connect(':memory:')
@@ -85,7 +79,7 @@ class operationFiles():
         connDisk.close()
         return colunas
         
-    st.cache_resource
+    @st.cache_data
     def distinctFields(_self, fileDb, allFieldsDb):
         zFieldsDb = len(allFieldsDb)
         dictFilters = {}
@@ -93,7 +87,7 @@ class operationFiles():
         connMemory = sqlite3.connect(':memory:')
         connDisk.backup(connMemory)
         cursor = connMemory.cursor()
-        fieldsDb = [allFieldsDb[z] for z in range(zFieldsDb) if z in [1, 12, 14, 15, 25, 26]]
+        fieldsDb = [allFieldsDb[z] for z in range(zFieldsDb) if z in [1, 14, 26]]
         for fielDb in fieldsDb: 
             query = f"SELECT DISTINCT {fielDb} FROM {_self.tableDb} ORDER BY {fielDb} ASC"
             df = pd.read_sql(query, connMemory)
@@ -106,7 +100,7 @@ class operationFiles():
         connDisk.close()
         return dictFilters
     
-    st.cache_resource
+    @st.cache_data
     def searchFields(_self, fileDb, keys, posOne, posTwo, valOne, valTwo):
         fieldOne = keys[posOne]
         fieldTwo = keys[posTwo]        
@@ -119,8 +113,8 @@ class operationFiles():
         results = cursor.fetchall()
         connMemory.close()
         connDisk.close() 
-        return results
-        
+        return results        
+
 class main():
     def __init__(self):
         self.dirDbZsdtSt = r"C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_chunks_Github"
@@ -130,13 +124,7 @@ class main():
         self.fileDbZsdt = "cota_parlamentar_CD_scraping.db.zst"
         self.fileDb = "cota_parlamentar_CD_scraping.db"
         self.tableDb = "gastos_cota_CD"
-        self.sqlRead = None
-        self.sqlCols = None
-        self.sqlFilters = {}
         self.initiationSql()
-        st.session_state[wordKeys[0]] += 1
-        objWindow = windowStream(self.sqlFilters, self.fileDb, self.tableDb)
-        objWindow.insertWidget()
         
     def setPage(self):
         st.set_page_config(
@@ -158,11 +146,13 @@ class main():
         with st.spinner("Atualizando o banco de dados"):
             verifyZsdt = objOperat.mergeFilesZsdt(self.dirDbZsdt, self.fileDbZsdt)
             if verifyZsdt:
+                st.session_state[wordKeys[0]] += 1
                 self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
-                self.sqlCols = objOperat.columnSql(self.sqlRead)
-                self.sqlFilters = objOperat.distinctFields(self.sqlRead, self.sqlCols)    
-                st.write(self.sqlCols)
-        
+                self.sqlCols = objOperat.columnSql(self.sqlRead) 
+                self.sqlFilters = objOperat.distinctFields(self.sqlRead, self.sqlCols)
+                objWindow = windowStream(self.sqlFilters, self.fileDb, self.tableDb)
+                objWindow.insertWidget()
+
 if __name__ == '__main__':
     global wordKeys
     wordKeys = ['count']
@@ -170,4 +160,3 @@ if __name__ == '__main__':
         st.session_state[wordKeys[0]] = 0
     main()
     
-#https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
