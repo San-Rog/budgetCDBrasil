@@ -20,7 +20,7 @@ class windowStream():
         if all([year is not None, uf is not None]):
             objOperat = operationFiles(self.tableDb) 
             results = objOperat.searchFields(self.fileDb, self.keys, 0, -1, year, uf)
-            optResults = [result[15] for result in results]
+            optResults = sorted(list(set([result[15] for result in results])))
             colDf.selectbox(label='Nome', options= optResults, width="stretch")
 
 class operationFiles():
