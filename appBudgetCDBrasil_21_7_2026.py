@@ -162,7 +162,12 @@ class main():
                 st.write(self.sqlCols)
         
 if __name__ == '__main__':
-    st.cache_data.clear()
-    main()
+    try:
+        main()
+    except:
+        pass
+    finally:
+        st.cache_data.clear()
+        
     
 #https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
