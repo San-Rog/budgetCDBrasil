@@ -38,8 +38,8 @@ class windowStream():
             with colDf:
                 st.markdown('Deputados federais')
                 colDf.selectbox(label='Nome', options=[], width="stretch", label_visibility="collapsed")
-            objOperat = operationFiles(self.tableDb) 
-            results = objOperat.searchFields(self.fileDb, self.keys, 0, -1, year, uf)
+            #objOperat = operationFiles(self.tableDb) 
+            #results = objOperat.searchFields(self.fileDb, self.keys, 0, -1, year, uf)
             #optResults = sorted(list(set([result[15] for result in results])))
             #colDf.selectbox(label='Nome', options= optResults, width="stretch")
 
@@ -169,4 +169,3 @@ if __name__ == '__main__':
         st.session_state[wordKeys[0]] = 0
     main()
     
-#https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
