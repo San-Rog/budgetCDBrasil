@@ -1,9 +1,10 @@
-import streamlit as st
-import sqlite3
-import pandas as pd
 import os
 import io
 import time
+import sqlite3
+import calendar
+import pandas as pd
+import streamlit as st
 import zstandard as zstd
 
 class windowStream():
@@ -14,14 +15,33 @@ class windowStream():
         self.tableDb = tableDb
                 
     def insertWidget(self):
-        colYear, colUf, colDf = st.columns([3, 3, 20])
-        year = colYear.selectbox(label='Exercício', options= self.filters[self.keys[0]], width="stretch")
-        uf = colUf.selectbox(label='UF', options= self.filters[self.keys[-1]], width="stretch")
-        if all([year is not None, uf is not None]):
-            objOperat = operationFiles(self.tableDb) 
-            results = objOperat.searchFields(self.fileDb, self.keys, 0, -1, year, uf)
-            optResults = sorted(list(set([result[15] for result in results])))
-            colDf.selectbox(label='Nome', options= optResults, width="stretch")
+        colYear, colUf, colDf = st.columns([13, 3, 20])
+        optMonths = self.filters[self.keys[2]]
+        optYears = self.filters[self.keys[0]]  
+        optUfs = self.filters[self.keys[-1]]
+        optUfs.insert(0, '')
+        with colYear:
+            st.markdown('Datas início e término')
+            colMonthStart, colYearStart, colMonthEnd, colYearEnd = st.columns(spec=4)
+            monthStart = colMonthStart.selectbox(label='mês A', options=optMonths, width="stretch", 
+                                                 label_visibility="collapsed")
+            yearStart = colYearStart.selectbox(label='ano A', options=optYears, width="stretch", 
+                                               label_visibility="collapsed")
+            monthEnd = colMonthEnd.selectbox(label='mês B', options=optMonths, width="stretch", 
+                                             label_visibility="collapsed")
+            yearSEnd = colYearEnd.selectbox(label='ano B', options=optYears, width="stretch", 
+                                            label_visibility="collapsed")
+        with colUf:
+            st.markdown('UF')
+            uf = st.selectbox(label='UF', options=self.filters[self.keys[-1]], width="stretch", label_visibility="collapsed")
+        if all([uf is not None, uf.strip() != '']):
+            with colDf:
+                st.markdown('Deputados federais')
+                st.selectbox(label='Nome', options=[], width="stretch", label_visibility="collapsed")
+        #    objOperat = operationFiles(self.tableDb) 
+        #    results = objOperat.searchFields(self.fileDb, self.keys, 0, -1, year, uf)
+        #    optResults = sorted(list(set([result[15] for result in results])))
+        #    colDf.selectbox(label='Nome', options= optResults, width="stretch")
 
 class operationFiles():
     def __init__(self, tableDb):    
@@ -139,6 +159,7 @@ class main():
                 self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
                 self.sqlCols = objOperat.columnSql(self.sqlRead)
                 self.sqlFilters = objOperat.distinctFields(self.sqlRead, self.sqlCols)    
+                st.write(self.sqlCols)
         
 if __name__ == '__main__':
     global wordKeys
