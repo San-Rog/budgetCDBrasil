@@ -162,10 +162,7 @@ class main():
                 st.write(self.sqlCols)
         
 if __name__ == '__main__':
-    global wordKeys
-    wordKeys = ['count']
-    if wordKeys[0] not in st.session_state:
-        st.session_state[wordKeys[0]] = 0
+    st.cache_data.clear()
     main()
     
 #https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
