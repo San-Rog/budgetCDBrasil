@@ -47,7 +47,7 @@ class operationFiles():
     def __init__(self, tableDb):    
         self.tableDb = tableDb
     
-    @st.cache_data    
+    st.cache_resource    
     def mergeFilesZsdt(_self, dirDbZsdt, fileDbZsdt):
         filesZsdt = sorted([f for f in os.listdir(dirDbZsdt) if f.lower().find('fake') < 0])
         if not filesZsdt:
@@ -61,7 +61,7 @@ class operationFiles():
                     fOut.write(f_chunk.read())
         return True
     
-    @st.cache_data
+    st.cache_resource
     def readFileSqlZsdt(_self, fileDbZsdt, fileDb):
         dctx = zstd.ZstdDecompressor()
         with open(fileDbZsdt, "rb") as compressFile:
@@ -72,7 +72,8 @@ class operationFiles():
             f.write(dbStream.getvalue())
         return fileDb
     
-    @st.cache_data
+    st.cache_resource
+
     def columnSql(_self, fileDb):
         connDisk = sqlite3.connect(fileDb)
         connMemory = sqlite3.connect(':memory:')
@@ -84,7 +85,7 @@ class operationFiles():
         connDisk.close()
         return colunas
         
-    @st.cache_data
+    st.cache_resource
     def distinctFields(_self, fileDb, allFieldsDb):
         zFieldsDb = len(allFieldsDb)
         dictFilters = {}
@@ -105,7 +106,7 @@ class operationFiles():
         connDisk.close()
         return dictFilters
     
-    @st.cache_data
+    st.cache_resource
     def searchFields(_self, fileDb, keys, posOne, posTwo, valOne, valTwo):
         fieldOne = keys[posOne]
         fieldTwo = keys[posTwo]        
@@ -169,3 +170,4 @@ if __name__ == '__main__':
         st.session_state[wordKeys[0]] = 0
     main()
     
+#https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
