@@ -47,17 +47,13 @@ class windowStream():
             optsName = sorted(list(set([result[15] for result in results])))
             selDf = colDf.selectbox(label='Nome', options=optsName, width="stretch", label_visibility="collapsed", 
                                         disabled=resultDisab)
-            if selDf is not None:
-                if len(selDf) > 0:
-                    st.write(selDf)
-                    cotas = [result for result in results if result[15] == selDf]
-                    for cota in cotas:
-                        st.text(cota)
-                else:
-                    st.write('nada de registro')
-            else:
-                    st.write('nada')
-
+        if selDf is not None:
+            if len(selDf) > 0:
+                st.write(selDf)
+                cotas = [result for result in results if result[15] == selDf]
+                for cota in cotas:
+                    st.text(cota)
+            
 class operationFiles():
     def __init__(self, tableDb):    
         self.tableDb = tableDb
