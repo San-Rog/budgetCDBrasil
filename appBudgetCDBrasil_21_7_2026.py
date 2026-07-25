@@ -190,4 +190,4 @@ if __name__ == '__main__':
         st.session_state[wordKeys[0]] = 0
     main()
     
-#https://budgetcdbrasil-4rtegiwypo57t9cuzzacwr.streamlit.app/
+#https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
