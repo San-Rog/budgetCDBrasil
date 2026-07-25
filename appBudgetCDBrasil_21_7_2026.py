@@ -7,7 +7,8 @@ import time
 import zstandard as zstd
 
 class windowStream():
-    def __init__(self, filters, fileDb, tableDb):
+    def __init__(self, cols, filters, fileDb, tableDb):
+        self.cols = cols
         self.filters = filters
         self.keys = sorted(list(filters.keys()))
         self.fileDb = fileDb
@@ -28,15 +29,23 @@ class windowStream():
                                                label_visibility="collapsed")
             monthEnd = colMonthEnd.selectbox(label='mês B', options=optMonths, width="stretch", 
                                              label_visibility="collapsed")
-            yearSEnd = colYearEnd.selectbox(label='ano B', options=optYears, width="stretch", 
+            yearEnd = colYearEnd.selectbox(label='ano B', options=optYears, width="stretch", 
                                             label_visibility="collapsed")
         with colUf:
             st.markdown('UF')
             uf = st.selectbox(label='UF', options=self.filters[self.keys[2]], width="stretch", label_visibility="collapsed")
-        if all([uf is not None, uf.strip() != '']):
-            with colDf:
-                st.markdown('Deputados federais')
-                colDf.selectbox(label='Nome', options=[], width="stretch", label_visibility="collapsed")
+        with colDf:
+            if all([uf is not None, uf.strip() != '']):
+                objOperat = operationFiles(self.tableDb)
+                results = objOperat.searchFields(self.fileDb, self.cols, monthStart, yearStart, monthEnd, yearEnd, uf, optMonths)
+                st.markdown("Deputados federais")
+                optsName = sorted(list(set([result[15] for result in results])))
+                selDf = colDf.selectbox(label='Nome', options=optsName, width="stretch", label_visibility="collapsed")
+                if len(selDf) > 0:
+                    st.write(selDf)
+                    cotas = [result for result in results if result[15] == selDf]
+                    for cota in cotas:
+                        st.text(cota)
 
 class operationFiles():
     def __init__(self, tableDb):    
@@ -101,19 +110,40 @@ class operationFiles():
         return dictFilters
     
     @st.cache_data
-    def searchFields(_self, fileDb, keys, posOne, posTwo, valOne, valTwo):
-        fieldOne = keys[posOne]
-        fieldTwo = keys[posTwo]        
+    def searchFields(_self, fileDb, cols, monthStart, yearStart, monthEnd, yearEnd, uf, months):
+        monthsDict = {}
+        indStart = months.index(monthStart)
+        allMonthStart = months[indStart:]
+        monthsDict[yearStart] = allMonthStart
+        indEnd = months.index(monthEnd)
+        allMonthEnd = months[:indEnd+1]
+        monthsDict[yearEnd] = allMonthEnd
+        noYears = [year for year in list(range(yearStart, yearEnd))if year != yearStart and year != yearEnd] 
+        for year in noYears: 
+            monthsDict[year] = months
+        yearKeys = sorted(list(monthsDict.keys()))
+        names = cols[15]
+        year = cols[1]
+        month = cols[14]
+        siglaUf = cols[26]
         connDisk = sqlite3.connect(fileDb)
         connMemory = sqlite3.connect(':memory:')
         cursor = connMemory.cursor()
         connDisk.backup(connMemory)
-        query = f"SELECT * FROM {_self.tableDb} WHERE {fieldOne} = ? AND {fieldTwo} = ?"
-        cursor.execute(query, (valOne, valTwo))
-        results = cursor.fetchall()
+        query = f"""
+            SELECT * FROM {_self.tableDb}
+            WHERE {year} BETWEEN ? AND ? AND {siglaUf} = ? ORDER BY {names} ASC;
+        """
+        cursor.execute(query, (yearStart, yearEnd, uf))
+        results = []
+        for fetch in cursor.fetchall():
+            monthInt = int(fetch[14])
+            yearInt = int(fetch[1])
+            if monthInt in monthsDict[yearInt]:
+                results.append(fetch)
         connMemory.close()
         connDisk.close() 
-        return results        
+        return results  
 
 class main():
     def __init__(self):
@@ -150,7 +180,7 @@ class main():
                 self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
                 self.sqlCols = objOperat.columnSql(self.sqlRead) 
                 self.sqlFilters = objOperat.distinctFields(self.sqlRead, self.sqlCols)
-                objWindow = windowStream(self.sqlFilters, self.fileDb, self.tableDb)
+                objWindow = windowStream(self.sqlCols, self.sqlFilters, self.fileDb, self.tableDb)
                 objWindow.insertWidget()
 
 if __name__ == '__main__':
@@ -160,3 +190,4 @@ if __name__ == '__main__':
         st.session_state[wordKeys[0]] = 0
     main()
     
+#https://budgetcdbrasil-4rtegiwypo57t9cuzzacwr.streamlit.app/
