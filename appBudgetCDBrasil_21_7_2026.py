@@ -35,21 +35,27 @@ class windowStream():
             st.markdown('UF')
             uf = st.selectbox(label='UF', options=self.filters[self.keys[2]], width="stretch", label_visibility="collapsed")
         with colDf:
+            results = []
             if all([uf is not None, uf.strip() != '']):
                 objOperat = operationFiles(self.tableDb)
                 results = objOperat.searchFields(self.fileDb, self.cols, monthStart, yearStart, monthEnd, yearEnd, uf, optMonths)
-                st.markdown("Deputados federais")
-                optsName = sorted(list(set([result[15] for result in results])))
-                selDf = colDf.selectbox(label='Nome', options=optsName, width="stretch", label_visibility="collapsed")
-                if selDf is not None:
-                    if len(selDf) > 0:
-                        st.write(selDf)
-                        cotas = [result for result in results if result[15] == selDf]
-                        for cota in cotas:
-                            st.text(cota)
-                    else:
-                        st.write('nada de registro')
+            if len(results) >= 1: 
+                resultDisab = False
+            else:
+                resultDisab = True                    
+            st.markdown("Deputados federais")
+            optsName = sorted(list(set([result[15] for result in results])))
+            selDf = colDf.selectbox(label='Nome', options=optsName, width="stretch", label_visibility="collapsed", 
+                                        disabled=resultDisab)
+            if selDf is not None:
+                if len(selDf) > 0:
+                    st.write(selDf)
+                    cotas = [result for result in results if result[15] == selDf]
+                    for cota in cotas:
+                        st.text(cota)
                 else:
+                    st.write('nada de registro')
+            else:
                     st.write('nada')
 
 class operationFiles():
@@ -147,7 +153,7 @@ class operationFiles():
             if monthInt in monthsDict[yearInt]:
                 results.append(fetch)
         connMemory.close()
-        connDisk.close() 
+        connDisk.close()         
         return results  
 
 class main():
