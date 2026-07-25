@@ -2,7 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import os
-import io 
+import io
 import time
 import zstandard as zstd
 
@@ -154,6 +154,7 @@ class operationFiles():
 
 class main():
     def __init__(self):
+        st.session_state[wordKeys[0]] += 1
         self.dirDbZsdtSt = r"C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_chunks_Github"
         self.dirDbZsdtGit = "./quotaAll"
         self.setPage()
@@ -180,15 +181,17 @@ class main():
             
     def initiationSql(self):
         objOperat = operationFiles(self.tableDb)
-        with st.spinner("Atualizando o banco de dados"):
+        if st.session_state[wordKeys[0]] == 1:
             verifyZsdt = objOperat.mergeFilesZsdt(self.dirDbZsdt, self.fileDbZsdt)
-            if verifyZsdt:
-                st.session_state[wordKeys[0]] += 1
-                self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
-                self.sqlCols = objOperat.columnSql(self.sqlRead) 
-                self.sqlFilters = objOperat.distinctFields(self.sqlRead, self.sqlCols)
-                objWindow = windowStream(self.sqlCols, self.sqlFilters, self.fileDb, self.tableDb)
-                objWindow.insertWidget()
+        else:
+            verifyZsdt = True
+        if verifyZsdt:
+            st.session_state[wordKeys[0]] += 1
+            self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
+            self.sqlCols = objOperat.columnSql(self.sqlRead) 
+            self.sqlFilters = objOperat.distinctFields(self.sqlRead, self.sqlCols)
+            objWindow = windowStream(self.sqlCols, self.sqlFilters, self.fileDb, self.tableDb)
+            objWindow.insertWidget()
 
 if __name__ == '__main__':
     global wordKeys
