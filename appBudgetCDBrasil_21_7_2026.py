@@ -1,11 +1,26 @@
 import os
 import io
 import time
+import locale
+import psutil
 import sqlite3
+import calendar
 import pandas as pd
 import streamlit as st
 import zstandard as zstd
 from unidecode import unidecode
+locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+
+class displayQuery():
+    def __init__(self, title):
+        self.title = title 
+        
+    def queryDf(self, data, cols, selDf):
+        cols[0] = "#"
+        df = pd.DataFrame(data, columns=cols)
+        nLanc = len(df)
+        st.markdown(f"{self.title} <-> Deputado(a) Federal {selDf} <-> {nLanc} lançamento(s)")
+        st.dataframe(data=df, width="stretch", hide_index=True)
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
@@ -16,45 +31,62 @@ class windowStream():
         self.tableDb = tableDb
                 
     def insertWidget(self):
-        colYear, colUf, colDf = st.columns([13, 3, 20])
-        optMonths = self.filters[self.keys[1]]
+        nSize = 4
+        colStart, colEnd, colUf, colDf = st.columns([nSize*2, nSize*2, nSize*1.2, nSize**2])
+        optMonths = list(calendar.month_name)[1:]
+        indMonths = [w + 1 for w in range(len(optMonths))]
         optYears = self.filters[self.keys[0]]  
         optUfs = self.filters[self.keys[2]]
+        nOptUfs = len(optUfs)
         optUfs.insert(0, '')
-        with colYear:
-            st.markdown('Datas início e término')
-            colMonthStart, colYearStart, colMonthEnd, colYearEnd = st.columns(spec=4)
-            monthStart = colMonthStart.selectbox(label='mês A', options=optMonths, width="stretch", 
+        with colStart:
+            st.markdown('início')
+            colMonthStart, colYearStart = st.columns(spec=2)
+            monthStart = colMonthStart.selectbox(label='mês início', options=optMonths, width="stretch", 
                                                  label_visibility="collapsed")
-            yearStart = colYearStart.selectbox(label='ano A', options=optYears, width="stretch", 
+            yearStart = colYearStart.selectbox(label='ano início', options=optYears, width="stretch", 
                                                label_visibility="collapsed")
-            monthEnd = colMonthEnd.selectbox(label='mês B', options=optMonths, width="stretch", 
+        with colEnd:
+            st.markdown('final')
+            colMonthEnd, colYearEnd = st.columns(spec=2)
+            monthEnd = colMonthEnd.selectbox(label='mês final', options=optMonths, width="stretch", 
                                              label_visibility="collapsed")
-            yearEnd = colYearEnd.selectbox(label='ano B', options=optYears, width="stretch", 
+            yearEnd = colYearEnd.selectbox(label='ano final', options=optYears, width="stretch", 
                                             label_visibility="collapsed")
         with colUf:
-            st.markdown('UF')
-            uf = st.selectbox(label='UF', options=self.filters[self.keys[2]], width="stretch", label_visibility="collapsed")
+            st.markdown(f"UF ({nOptUfs})")
+            uf = st.selectbox(label='UF', options=optUfs, width="stretch", label_visibility="collapsed", 
+                              placeholder="UF a selecionar")
         with colDf:
             results = []
             if all([uf is not None, uf.strip() != '']):
                 objOperat = operationFiles(self.tableDb)
-                results = objOperat.searchFields(self.fileDb, self.cols, monthStart, yearStart, monthEnd, yearEnd, uf, optMonths)
-            if len(results) >= 1: 
+                indStart = monthStart.index(monthStart) 
+                indEnd = optMonths.index(monthEnd)
+                results = objOperat.searchFields(self.fileDb, self.cols, indStart, yearStart, indEnd, yearEnd, uf, indMonths)
+            nResults = len(results)
+            if nResults >= 1: 
                 resultDisab = False
             else:
-                resultDisab = True                    
-            st.markdown("Deputados federais")
+                resultDisab = True  
             optsName = sorted(list(set([result[15] for result in results])))
+            nOptsName = len(optsName)
             optsName = sorted(optsName, key=lambda w: unidecode(w).lower())
-            selDf = colDf.selectbox(label='Nome', options=optsName, width="stretch", label_visibility="collapsed", 
-                                        disabled=resultDisab)
-        if selDf is not None:
+            optsName.insert(0, '')
+            st.markdown(f"Deputados federais ({nOptsName})")
+            allSelDf = colDf.multiselect(label='Nome', options=optsName, width="stretch", label_visibility="collapsed", 
+                                      placeholder="Deputados a selecionar", accept_new_options= True, disabled=resultDisab)
+        
+        for selDf in allSelDf:
+            objDisplay = displayQuery('Consulta de dados')
             if len(selDf) > 0:
-                st.write(selDf)
                 cotas = [result for result in results if result[15] == selDf]
-                for cota in cotas:
-                    st.text(cota)
+                newCotas = []
+                for c, cota in enumerate(cotas):
+                    newCota = list(cota)
+                    newCota[0] = c+1
+                    newCotas.append(newCota)
+                objDisplay.queryDf(newCotas, self.cols, selDf)
             
 class operationFiles():
     def __init__(self, tableDb):    
@@ -88,12 +120,9 @@ class operationFiles():
     @st.cache_data(show_spinner=False)
     def columnSql(_self, fileDb):
         connDisk = sqlite3.connect(fileDb)
-        connMemory = sqlite3.connect(':memory:')
-        connDisk.backup(connMemory)
-        cursor = connMemory.cursor()
+        cursor = connDisk.cursor()
         cursor.execute(f"PRAGMA table_info({_self.tableDb})")
         colunas = [info[1] for info in cursor.fetchall()]
-        connMemory.close()
         connDisk.close()
         return colunas
         
@@ -102,34 +131,29 @@ class operationFiles():
         zFieldsDb = len(allFieldsDb)
         dictFilters = {}
         connDisk = sqlite3.connect(fileDb)
-        connMemory = sqlite3.connect(':memory:')
-        connDisk.backup(connMemory)
-        cursor = connMemory.cursor()
+        cursor = connDisk.cursor()
         fieldsDb = [allFieldsDb[z] for z in range(zFieldsDb) if z in [1, 14, 26]]
         for fielDb in fieldsDb: 
             query = f"SELECT DISTINCT {fielDb} FROM {_self.tableDb} ORDER BY {fielDb} ASC"
-            df = pd.read_sql(query, connMemory)
+            df = pd.read_sql(query, connDisk)
             try:
                 data = sorted([int(field) for field in df[fielDb].tolist()])
             except:
                 data = sorted(df[fielDb].tolist())
             dictFilters[fielDb] = data
-        connMemory.close()
         connDisk.close()
         return dictFilters
     
     @st.cache_data(show_spinner=False)
-    def searchFields(_self, fileDb, cols, monthStart, yearStart, monthEnd, yearEnd, uf, months):
+    def searchFields(_self, fileDb, cols, indStart, yearStart, indEnd, yearEnd, uf, indMonths):
         monthsDict = {}
-        indStart = months.index(monthStart)
-        allMonthStart = months[indStart:]
+        allMonthStart = indMonths[indStart:]
         monthsDict[yearStart] = allMonthStart
-        indEnd = months.index(monthEnd)
-        allMonthEnd = months[:indEnd+1]
+        allMonthEnd = indMonths[:indEnd+1]
         monthsDict[yearEnd] = allMonthEnd
         noYears = [year for year in list(range(yearStart, yearEnd))if year != yearStart and year != yearEnd] 
         for year in noYears: 
-            monthsDict[year] = months
+            monthsDict[year] = indMonths
         yearKeys = sorted(list(monthsDict.keys()))
         names = cols[15]
         dates = cols[6]
@@ -137,9 +161,7 @@ class operationFiles():
         month = cols[14]
         siglaUf = cols[26]
         connDisk = sqlite3.connect(fileDb)
-        connMemory = sqlite3.connect(':memory:')
-        cursor = connMemory.cursor()
-        connDisk.backup(connMemory)
+        cursor = connDisk.cursor()
         query = f"""
             SELECT * FROM {_self.tableDb}
             WHERE {year} BETWEEN ? AND ? AND {siglaUf} = ? ORDER BY {dates} ASC;
@@ -151,7 +173,6 @@ class operationFiles():
             yearInt = int(fetch[1])
             if monthInt in monthsDict[yearInt]:
                 results.append(fetch)
-        connMemory.close()
         connDisk.close()         
         return results  
 
@@ -189,6 +210,10 @@ class main():
         else:
             verifyZsdt = True
         if verifyZsdt:
+            process = psutil.Process(os.getpid())
+            memory_info = process.memory_info()
+            memory_used_mb = memory_info.rss / (1024 * 1024 * 1024)
+            st.write(f"Memória usada: {memory_used_mb:.2f} GB") 
             st.session_state[wordKeys[0]] += 1
             self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
             self.sqlCols = objOperat.columnSql(self.sqlRead) 
