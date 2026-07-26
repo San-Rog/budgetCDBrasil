@@ -9,13 +9,7 @@ import pandas as pd
 import streamlit as st
 import zstandard as zstd
 from unidecode import unidecode
-try:
-  locale.setlocale(locale.LC_TIME, 'pt_BR')
-except:
-  try:
-    locale.setlocale(locale.LC_TIME, 'portuguese')
-  except:
-    pass
+locale.setlocale(locale.LC_TIME, 'pt_BR')
 
 class displayQuery():
     def __init__(self, title):
