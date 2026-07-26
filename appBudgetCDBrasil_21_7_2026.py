@@ -10,7 +10,7 @@ import streamlit as st
 import zstandard as zstd
 from unidecode import unidecode
 try:
-  locale.setlocale(locale.LC_TIME, 'pt_BR.utf-8')
+  locale.setlocale(locale.LC_TIME, 'pt_BR')
 except:
   try:
     locale.setlocale(locale.LC_TIME, 'portuguese')
