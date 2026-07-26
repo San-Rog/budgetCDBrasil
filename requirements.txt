@@ -3,4 +3,3 @@ pandas==3.0.3
 zstandard==0.25.0
 psutil==7.0.0
 unidecode
-locale
