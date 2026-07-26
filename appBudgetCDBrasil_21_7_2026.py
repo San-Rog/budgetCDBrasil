@@ -1,10 +1,11 @@
-import streamlit as st
-import sqlite3
-import pandas as pd
 import os
 import io
 import time
+import sqlite3
+import pandas as pd
+import streamlit as st
 import zstandard as zstd
+from unidecode import unidecode
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
@@ -45,6 +46,7 @@ class windowStream():
                 resultDisab = True                    
             st.markdown("Deputados federais")
             optsName = sorted(list(set([result[15] for result in results])))
+            optsName = sorted(optsName, key=lambda w: unidecode(w).lower())
             selDf = colDf.selectbox(label='Nome', options=optsName, width="stretch", label_visibility="collapsed", 
                                         disabled=resultDisab)
         if selDf is not None:
@@ -58,7 +60,7 @@ class operationFiles():
     def __init__(self, tableDb):    
         self.tableDb = tableDb
     
-    @st.cache_data    
+    @st.cache_data(show_spinner=False)    
     def mergeFilesZsdt(_self, dirDbZsdt, fileDbZsdt):
         filesZsdt = sorted([f for f in os.listdir(dirDbZsdt) if f.lower().find('fake') < 0])
         if not filesZsdt:
@@ -72,7 +74,7 @@ class operationFiles():
                     fOut.write(f_chunk.read())
         return True
     
-    @st.cache_data
+    @st.cache_data(show_spinner=False)
     def readFileSqlZsdt(_self, fileDbZsdt, fileDb):
         dctx = zstd.ZstdDecompressor()
         with open(fileDbZsdt, "rb") as compressFile:
@@ -83,7 +85,7 @@ class operationFiles():
             f.write(dbStream.getvalue())
         return fileDb
     
-    @st.cache_data
+    @st.cache_data(show_spinner=False)
     def columnSql(_self, fileDb):
         connDisk = sqlite3.connect(fileDb)
         connMemory = sqlite3.connect(':memory:')
@@ -95,7 +97,7 @@ class operationFiles():
         connDisk.close()
         return colunas
         
-    @st.cache_data
+    @st.cache_data(show_spinner=False)
     def distinctFields(_self, fileDb, allFieldsDb):
         zFieldsDb = len(allFieldsDb)
         dictFilters = {}
@@ -116,7 +118,7 @@ class operationFiles():
         connDisk.close()
         return dictFilters
     
-    @st.cache_data
+    @st.cache_data(show_spinner=False)
     def searchFields(_self, fileDb, cols, monthStart, yearStart, monthEnd, yearEnd, uf, months):
         monthsDict = {}
         indStart = months.index(monthStart)
@@ -130,6 +132,7 @@ class operationFiles():
             monthsDict[year] = months
         yearKeys = sorted(list(monthsDict.keys()))
         names = cols[15]
+        dates = cols[6]
         year = cols[1]
         month = cols[14]
         siglaUf = cols[26]
@@ -139,7 +142,7 @@ class operationFiles():
         connDisk.backup(connMemory)
         query = f"""
             SELECT * FROM {_self.tableDb}
-            WHERE {year} BETWEEN ? AND ? AND {siglaUf} = ? ORDER BY {names} ASC;
+            WHERE {year} BETWEEN ? AND ? AND {siglaUf} = ? ORDER BY {dates} ASC;
         """
         cursor.execute(query, (yearStart, yearEnd, uf))
         results = []
