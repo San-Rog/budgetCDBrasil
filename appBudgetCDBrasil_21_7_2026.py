@@ -181,10 +181,8 @@ class main():
         st.session_state[wordKeys[0]] += 1
         self.dirDbZsdtSt = r"C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_chunks_Github"
         self.dirDbZsdtGit = "./quotaAll"
-        self.fileCssSt = r"C:\Users\ACER\Documents\css\configCotasCd.css"
-        self.fileCssGit = "configCotasCd.css"
-        self.isRunning()
         self.setPage()
+        self.isRunning()
         self.fileDbZsdt = "cota_parlamentar_CD_scraping.db.zst"
         self.fileDb = "cota_parlamentar_CD_scraping.db"
         self.tableDb = "gastos_cota_CD"
@@ -198,11 +196,6 @@ class main():
             initial_sidebar_state=None, 
             menu_items=None
         ) 
-        #fileCss = r'C:\Users\ACER\Documents\css\configCotasCd.css' #(local)
-        #fileCss = 'configImg_new.css' #(github)
-        #with open(fileCss) as f:
-        #    css = f.read()
-        #st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
         
     def isRunning(self):
         if os.path.exists(self.dirDbZsdtSt):
