@@ -109,16 +109,13 @@ class operationFiles():
     @st.cache_data(show_spinner=False)
     def readFileSqlZsdt(_self, fileDbZsdt, fileDb):
         dctx = zstd.ZstdDecompressor()
-        try:
-            with open(fileDbZsdt, "rb") as compressFile:
-                with dctx.stream_reader(compressFile) as reader:
-                    decompressData = reader.read()
-            dbStream = io.BytesIO(decompressData)
-            with open(fileDb, 'wb') as f:
-                f.write(dbStream.getvalue())
-            return fileDb
-        except Exception as error:
-            st.write(error)
+        with open(fileDbZsdt, "rb") as compressFile:
+            with dctx.stream_reader(compressFile) as reader:
+                decompressData = reader.read()
+        dbStream = io.BytesIO(decompressData)
+        with open(fileDb, 'wb') as f:
+            f.write(dbStream.getvalue())
+        return fileDb
     
     @st.cache_data(show_spinner=False)
     def columnSql(_self, fileDb):
@@ -208,7 +205,7 @@ class main():
             
     def initiationSql(self):
         objOperat = operationFiles(self.tableDb)
-        if st.session_state[wordKeys[0]] == 0:
+        if st.session_state[wordKeys[0]] == 1:
             verifyZsdt = objOperat.mergeFilesZsdt(self.dirDbZsdt, self.fileDbZsdt)
         else:
             verifyZsdt = True
