@@ -9,7 +9,7 @@ import pandas as pd
 import streamlit as st
 import zstandard as zstd
 from unidecode import unidecode
-locale.setlocale(locale.LC_TIME, 'pt_BR')
+locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 class displayQuery():
     def __init__(self, title):
@@ -181,8 +181,10 @@ class main():
         st.session_state[wordKeys[0]] += 1
         self.dirDbZsdtSt = r"C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_chunks_Github"
         self.dirDbZsdtGit = "./quotaAll"
-        self.setPage()
+        self.fileCssSt = r"C:\Users\ACER\Documents\css\configCotasCd.css"
+        self.fileCssGit = "configCotasCd.css"
         self.isRunning()
+        self.setPage()
         self.fileDbZsdt = "cota_parlamentar_CD_scraping.db.zst"
         self.fileDb = "cota_parlamentar_CD_scraping.db"
         self.tableDb = "gastos_cota_CD"
@@ -196,12 +198,17 @@ class main():
             initial_sidebar_state=None, 
             menu_items=None
         ) 
+        with open(self.fileCss) as f:
+            css = f.read()
+        st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
         
     def isRunning(self):
         if os.path.exists(self.dirDbZsdtSt):
             self.dirDbZsdt = self.dirDbZsdtSt
+            self.fileCss = self.fileCssSt
         else:
             self.dirDbZsdt = self.dirDbZsdtGit
+            self.fileCss =  self.fileCssGit
             
     def initiationSql(self):
         objOperat = operationFiles(self.tableDb)
