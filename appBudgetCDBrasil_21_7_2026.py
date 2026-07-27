@@ -95,6 +95,7 @@ class operationFiles():
     @st.cache_data(show_spinner=False)    
     def mergeFilesZsdt(_self, dirDbZsdt, fileDbZsdt):
         filesZsdt = sorted([f for f in os.listdir(dirDbZsdt) if f.lower().find('fake') < 0])
+        st.write(filesZsdt)
         if not filesZsdt:
             return False
         nTasks = len(filesZsdt)
@@ -205,8 +206,7 @@ class main():
             
     def initiationSql(self):
         objOperat = operationFiles(self.tableDb)
-        if st.session_state[wordKeys[0]] == 1:
-            verifyZsdt = objOperat.mergeFilesZsdt(self.dirDbZsdt, self.fileDbZsdt)
+        verifyZsdt = objOperat.mergeFilesZsdt(self.dirDbZsdt, self.fileDbZsdt)
         if verifyZsdt:
             process = psutil.Process(os.getpid())
             memory_info = process.memory_info()
