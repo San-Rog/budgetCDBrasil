@@ -110,7 +110,6 @@ class operationFiles():
     def readFileSqlZsdt(_self, fileDbZsdt, fileDb):
         dctx = zstd.ZstdDecompressor()
         with open(fileDbZsdt, "rb") as compressFile:
-            st.write(fileDbZsdt)
             with dctx.stream_reader(compressFile) as reader:
                 decompressData = reader.read()
         dbStream = io.BytesIO(decompressData)
@@ -208,8 +207,6 @@ class main():
         objOperat = operationFiles(self.tableDb)
         if st.session_state[wordKeys[0]] == 1:
             verifyZsdt = objOperat.mergeFilesZsdt(self.dirDbZsdt, self.fileDbZsdt)
-        else:
-            verifyZsdt = True
         if verifyZsdt:
             process = psutil.Process(os.getpid())
             memory_info = process.memory_info()
