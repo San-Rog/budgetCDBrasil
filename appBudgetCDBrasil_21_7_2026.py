@@ -110,6 +110,7 @@ class operationFiles():
     def readFileSqlZsdt(_self, fileDbZsdt, fileDb):
         dctx = zstd.ZstdDecompressor()
         with open(fileDbZsdt, "rb") as compressFile:
+            st.write(fileDbZsdt)
             with dctx.stream_reader(compressFile) as reader:
                 decompressData = reader.read()
         dbStream = io.BytesIO(decompressData)
