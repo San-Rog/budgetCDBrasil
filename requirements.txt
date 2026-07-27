@@ -1,4 +1,5 @@
 streamlit==1.60.0
 pandas==3.0.3
 psutil==7.0.0
+zstandard==0.25.0
 unidecode
