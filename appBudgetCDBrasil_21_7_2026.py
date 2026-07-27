@@ -183,6 +183,7 @@ class main():
         self.dirDbZsdtGit = "./quotaAll"
         self.fileCssSt = r"C:\Users\ACER\Documents\css\configCotasCd.css"
         self.fileCssGit = "configCotasCd.css"
+        self.isRunning()
         self.setPage()
         self.fileDbZsdt = "cota_parlamentar_CD_scraping.db.zst"
         self.fileDb = "cota_parlamentar_CD_scraping.db"
@@ -197,15 +198,17 @@ class main():
             initial_sidebar_state=None, 
             menu_items=None
         ) 
+        #fileCss = r'C:\Users\ACER\Documents\css\configCotasCd.css' #(local)
+        #fileCss = 'configImg_new.css' #(github)
+        #with open(fileCss) as f:
+        #    css = f.read()
+        #st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
+        
+    def isRunning(self):
         if os.path.exists(self.dirDbZsdtSt):
             self.dirDbZsdt = self.dirDbZsdtSt
-            self.fileCss = self.fileCssSt
         else:
             self.dirDbZsdt = self.dirDbZsdtGit
-            self.fileCss =  self.fileCssGit
-        with open(self.fileCss) as f:
-            css = f.read()
-        st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
             
     def initiationSql(self):
         objOperat = operationFiles(self.tableDb)
