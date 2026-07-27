@@ -109,13 +109,16 @@ class operationFiles():
     @st.cache_data(show_spinner=False)
     def readFileSqlZsdt(_self, fileDbZsdt, fileDb):
         dctx = zstd.ZstdDecompressor()
-        with open(fileDbZsdt, "rb") as compressFile:
-            with dctx.stream_reader(compressFile) as reader:
-                decompressData = reader.read()
-        dbStream = io.BytesIO(decompressData)
-        with open(fileDb, 'wb') as f:
-            f.write(dbStream.getvalue())
-        return fileDb
+        try:
+            with open(fileDbZsdt, "rb") as compressFile:
+                with dctx.stream_reader(compressFile) as reader:
+                    decompressData = reader.read()
+            dbStream = io.BytesIO(decompressData)
+            with open(fileDb, 'wb') as f:
+                f.write(dbStream.getvalue())
+            return fileDb
+        except Exception as error:
+            st.write(error)
     
     @st.cache_data(show_spinner=False)
     def columnSql(_self, fileDb):
