@@ -9,13 +9,7 @@ import pandas as pd
 import streamlit as st
 import zstandard as zstd
 from unidecode import unidecode
-try:
-  locale.setlocale(locale.LC_TIME, 'pt_BR.utf-8')
-except:
-  try:
-    locale.setlocale(locale.LC_TIME, 'portuguese')
-  except:
-    pass
+locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 class displayQuery():
     def __init__(self, title):
@@ -201,7 +195,7 @@ class main():
             layout='wide', 
             initial_sidebar_state=None, 
             menu_items=None
-        ) 
+        )
         
     def isRunning(self):
         if os.path.exists(self.dirDbZsdtSt):
