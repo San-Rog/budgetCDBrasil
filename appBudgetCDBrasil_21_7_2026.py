@@ -8,6 +8,7 @@ import calendar
 import pandas as pd
 import streamlit as st
 import zstandard as zstd
+from datetime import date
 from unidecode import unidecode
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
@@ -29,41 +30,65 @@ class windowStream():
         self.keys = sorted(list(filters.keys()))
         self.fileDb = fileDb
         self.tableDb = tableDb
-                
+                   
     def insertWidget(self):
         nSize = 4
         colStart, colEnd, colUf, colDf = st.columns([nSize*2, nSize*2, nSize*1.2, nSize**2])
-        optMonths = list(calendar.month_name)[1:]
-        indMonths = [w + 1 for w in range(len(optMonths))]
-        optYears = self.filters[self.keys[0]]  
+        self.optMonthsAll = list(calendar.month_name)[1:]
+        self.indMonths = [w + 1 for w in range(len(self.optMonthsAll))]
+        optYears = self.filters[self.keys[0]] 
+        optYears.insert(0, '')
+        self.optYearsEnd = []
+        self.optMonthsEnd = []
         optUfs = self.filters[self.keys[2]]
         nOptUfs = len(optUfs)
         optUfs.insert(0, '')
+        self.optMonths = []
         with colStart:
-            st.markdown('início')
-            colMonthStart, colYearStart = st.columns(spec=2)
-            monthStart = colMonthStart.selectbox(label='mês início', options=optMonths, width="stretch", 
-                                                 label_visibility="collapsed")
-            yearStart = colYearStart.selectbox(label='ano início', options=optYears, width="stretch", 
-                                               label_visibility="collapsed")
+            st.markdown(":material/date_range: data inicial", unsafe_allow_html=True, text_alignment="center", 
+                        anchors=True)
+            colYearStart, colMonthStart = st.columns(spec=2)
+            self.yearStart = colYearStart.selectbox(label='ano início', options=optYears, width="stretch", 
+                                                    label_visibility="collapsed", key=wordKeys[6])
+            if self.yearStart:
+                self.defineMonths(1)
+            else:
+                st.session_state[wordKeys[1]] = True
+                st.session_state[wordKeys[2]] = True
+                st.session_state[wordKeys[3]] = True
+            self.monthStart = colMonthStart.selectbox(label='mês início', options=self.optMonths, width="stretch", 
+                                                      label_visibility="collapsed", disabled=st.session_state[wordKeys[1]])
+            if self.monthStart:
+                self.defineMonths(2)
+            else:
+                st.session_state[wordKeys[2]] = True
+                st.session_state[wordKeys[3]] = True
+                st.session_state[wordKeys[7]] = ''
+                st.session_state[wordKeys[8]] = ''
         with colEnd:
-            st.markdown('final')
-            colMonthEnd, colYearEnd = st.columns(spec=2)
-            monthEnd = colMonthEnd.selectbox(label='mês final', options=optMonths, width="stretch", 
-                                             label_visibility="collapsed")
-            yearEnd = colYearEnd.selectbox(label='ano final', options=optYears, width="stretch", 
-                                            label_visibility="collapsed")
+            st.markdown(":material/date_range: data final", unsafe_allow_html=True, text_alignment="center", 
+                        anchors=True)
+            colYearEnd, colMonthEnd = st.columns(spec=2)
+            self.yearEnd = colYearEnd.selectbox(label='ano final', options=self.optYearsEnd, width="stretch", key=wordKeys[7], 
+                                                label_visibility="collapsed", disabled=st.session_state[wordKeys[2]])
+            self.monthEnd = colMonthEnd.selectbox(label='mês final', options=self.optMonthsEnd, width="stretch", key=wordKeys[8],
+                                                  label_visibility="collapsed", disabled=st.session_state[wordKeys[3]])
         with colUf:
-            st.markdown(f"UF ({nOptUfs})")
-            uf = st.selectbox(label='UF', options=optUfs, width="stretch", label_visibility="collapsed", 
-                              placeholder="UF a selecionar")
+            st.markdown(":material/flag: estados", unsafe_allow_html=True, text_alignment="center", 
+                        anchors=True)
+            if all([self.yearStart, self.monthStart, self.yearEnd, self.monthEnd]):
+                st.session_state[wordKeys[4]] = False
+            else:
+                st.session_state[wordKeys[4]] = True
+            uf = st.selectbox(label="estados", options=optUfs, width="stretch", label_visibility="collapsed", 
+                              placeholder="UF a selecionar", disabled=st.session_state[wordKeys[4]])
         with colDf:
             results = []
             if all([uf is not None, uf.strip() != '']):
                 objOperat = operationFiles(self.tableDb)
-                indStart = monthStart.index(monthStart) 
-                indEnd = optMonths.index(monthEnd)
-                results = objOperat.searchFields(self.fileDb, self.cols, indStart, yearStart, indEnd, yearEnd, uf, indMonths)
+                indStart = self.optMonthsAll.index(self.monthStart) 
+                indEnd = self.optMonths.index(self.monthEnd)
+                results = objOperat.searchFields(self.fileDb, self.cols, indStart, self.yearStart, indEnd, self.yearEnd, uf, self.indMonths)
             nResults = len(results)
             if nResults >= 1: 
                 resultDisab = False
@@ -73,9 +98,10 @@ class windowStream():
             nOptsName = len(optsName)
             optsName = sorted(optsName, key=lambda w: unidecode(w).lower())
             optsName.insert(0, '')
-            st.markdown(f"Deputados federais ({nOptsName})")
-            allSelDf = colDf.multiselect(label='Nome', options=optsName, width="stretch", label_visibility="collapsed", 
-                                      placeholder="Deputados a selecionar", accept_new_options= True, disabled=resultDisab)
+            st.markdown(":material/person_raised_hand: deputados federais", unsafe_allow_html=True, text_alignment="center", 
+                        anchors=True)
+            allSelDf = colDf.multiselect(label="deputado federais", options=optsName, width="stretch", label_visibility="collapsed", 
+                                         placeholder="Deputados a selecionar", accept_new_options= True, disabled=resultDisab)
         
         for selDf in allSelDf:
             objDisplay = displayQuery('Consulta de dados')
@@ -87,6 +113,20 @@ class windowStream():
                     newCota[0] = c+1
                     newCotas.append(newCota)
                 objDisplay.queryDf(newCotas, self.cols, selDf)
+    
+    def defineMonths(self, num):
+        yearNow = date.today().year
+        monthNow = date.today().month
+        yearSel = self.yearStart
+        self.optMonths = list(calendar.month_name)[1:]
+        if yearSel == yearNow:
+            self.optMonths = self.optMonths[:monthNow]
+        self.optMonths.insert(0, '')
+        if num == 1:
+            st.session_state[wordKeys[num]] = False   
+        elif num == 2:
+            st.session_state[wordKeys[num]] = False
+            st.session_state[wordKeys[num+1]] = False
             
 class operationFiles():
     def __init__(self, tableDb):    
@@ -213,7 +253,7 @@ class main():
             process = psutil.Process(os.getpid())
             memory_info = process.memory_info()
             memory_used_mb = memory_info.rss / (1024 * 1024 * 1024)
-            st.write(f"Memória usada: {memory_used_mb:.2f} GB") 
+            #st.write(f"Memória usada: {memory_used_mb:.2f} GB") 
             st.session_state[wordKeys[0]] += 1
             self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
             self.sqlCols = objOperat.columnSql(self.sqlRead) 
@@ -223,9 +263,15 @@ class main():
 
 if __name__ == '__main__':
     global wordKeys
-    wordKeys = ['count']
-    if wordKeys[0] not in st.session_state:
-        st.session_state[wordKeys[0]] = 0
+    wordKeys = ['count', 'enableMonthStart', 'enableYearEnd', 'enableMonthEnd', 
+                'enableUfs', 'valYearStart', 'valMonthStart', 'valYearEnd', 'valMonthEnd']
+    for w, wordKey in enumerate(wordKeys):
+        if w == 0:
+            val = 0
+        elif w >= 1 and w <= 4:
+            val = True
+        else:
+            val = None
+        if wordKey not in st.session_state:
+            st.session_state[wordKey] = val
     main()
-    
-#https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
