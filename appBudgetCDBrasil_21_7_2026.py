@@ -37,6 +37,7 @@ class windowStream():
         self.optMonthsAll = list(calendar.month_name)[1:]
         self.indMonths = [w + 1 for w in range(len(self.optMonthsAll))]
         optYears = self.filters[self.keys[0]] 
+        self.optYears = optYears
         optYears.insert(0, '')
         self.optYearsEnd = []
         self.optMonthsEnd = []
@@ -56,6 +57,8 @@ class windowStream():
                 st.session_state[wordKeys[1]] = True
                 st.session_state[wordKeys[2]] = True
                 st.session_state[wordKeys[3]] = True
+                st.session_state[wordKeys[9]] = ''
+                st.session_state[wordKeys[10]] = []
             self.monthStart = colMonthStart.selectbox(label='mês início', options=self.optMonths, width="stretch", 
                                                       label_visibility="collapsed", disabled=st.session_state[wordKeys[1]])
             if self.monthStart:
@@ -65,14 +68,29 @@ class windowStream():
                 st.session_state[wordKeys[3]] = True
                 st.session_state[wordKeys[7]] = ''
                 st.session_state[wordKeys[8]] = ''
+                st.session_state[wordKeys[9]] = ''
+                st.session_state[wordKeys[10]] = []
         with colEnd:
             st.markdown(":material/date_range: data final", unsafe_allow_html=True, text_alignment="center", 
                         anchors=True)
             colYearEnd, colMonthEnd = st.columns(spec=2)
             self.yearEnd = colYearEnd.selectbox(label='ano final', options=self.optYearsEnd, width="stretch", key=wordKeys[7], 
                                                 label_visibility="collapsed", disabled=st.session_state[wordKeys[2]])
+            if self.yearEnd:
+               self.defineMonths(3)
+            else:
+               st.session_state[wordKeys[3]] = True
+               st.session_state[wordKeys[9]] = ''
+               st.session_state[wordKeys[10]] = []
             self.monthEnd = colMonthEnd.selectbox(label='mês final', options=self.optMonthsEnd, width="stretch", key=wordKeys[8],
                                                   label_visibility="collapsed", disabled=st.session_state[wordKeys[3]])
+            
+            try:
+                if not self.monthEnd:
+                    st.session_state[wordKeys[9]] = ''
+                    st.session_state[wordKeys[10]] = [] 
+            except:
+                pass
         with colUf:
             st.markdown(":material/flag: estados", unsafe_allow_html=True, text_alignment="center", 
                         anchors=True)
@@ -81,19 +99,28 @@ class windowStream():
             else:
                 st.session_state[wordKeys[4]] = True
             uf = st.selectbox(label="estados", options=optUfs, width="stretch", label_visibility="collapsed", 
-                              placeholder="UF a selecionar", disabled=st.session_state[wordKeys[4]])
+                              key=wordKeys[9], placeholder="UF a selecionar", disabled=st.session_state[wordKeys[4]])
+            try:
+                if not uf:
+                    st.session_state[wordKeys[10]]= []
+            except:
+                pass
         with colDf:
             results = []
-            if all([uf is not None, uf.strip() != '']):
-                objOperat = operationFiles(self.tableDb)
-                indStart = self.optMonthsAll.index(self.monthStart) 
-                indEnd = self.optMonths.index(self.monthEnd)
-                results = objOperat.searchFields(self.fileDb, self.cols, indStart, self.yearStart, indEnd, self.yearEnd, uf, self.indMonths)
+            optsName = ['']
+            try:
+                if all([uf is not None, uf.strip() != '']):
+                    objOperat = operationFiles(self.tableDb)
+                    indStart = self.optMonthsAll.index(self.monthStart) 
+                    indEnd = self.optMonths.index(self.monthEnd)
+                    results = objOperat.searchFields(self.fileDb, self.cols, indStart, self.yearStart, indEnd, self.yearEnd, uf, self.indMonths)
+            except:
+                pass
             nResults = len(results)
             if nResults >= 1: 
                 resultDisab = False
             else:
-                resultDisab = True  
+                resultDisab = True                 
             optsName = sorted(list(set([result[15] for result in results])))
             nOptsName = len(optsName)
             optsName = sorted(optsName, key=lambda w: unidecode(w).lower())
@@ -101,7 +128,7 @@ class windowStream():
             st.markdown(":material/person_raised_hand: deputados federais", unsafe_allow_html=True, text_alignment="center", 
                         anchors=True)
             allSelDf = colDf.multiselect(label="deputado federais", options=optsName, width="stretch", label_visibility="collapsed", 
-                                         placeholder="Deputados a selecionar", accept_new_options= True, disabled=resultDisab)
+                                         key=wordKeys[10], placeholder="Deputados a selecionar", accept_new_options= True, disabled=resultDisab)
         
         for selDf in allSelDf:
             objDisplay = displayQuery('Consulta de dados')
@@ -124,10 +151,23 @@ class windowStream():
         self.optMonths.insert(0, '')
         if num == 1:
             st.session_state[wordKeys[num]] = False   
+            indYearSel = self.optYears.index(yearSel)
+            self.optYearsEnd = [self.optYears[w] for w in range(len(self.optYears)) if w >= indYearSel]
+            self.optYearsEnd.insert(0, '')  
         elif num == 2:
+            monthSel = self.monthStart
             st.session_state[wordKeys[num]] = False
             st.session_state[wordKeys[num+1]] = False
-            
+        elif num == 3:
+            monthSel = self.monthStart
+            st.session_state[wordKeys[num]] = False
+            indMonthSel = self.optMonths.index(monthSel)
+            if self.yearStart == self.yearEnd:
+                self.optMonthsEnd = [self.optMonths[w] for w in range(len(self.optMonths)) if w >= indMonthSel]
+            else:
+                self.optMonthsEnd = self.optMonthsAll
+            self.optMonthsEnd.insert(0, '')
+
 class operationFiles():
     def __init__(self, tableDb):    
         self.tableDb = tableDb
@@ -264,14 +304,19 @@ class main():
 if __name__ == '__main__':
     global wordKeys
     wordKeys = ['count', 'enableMonthStart', 'enableYearEnd', 'enableMonthEnd', 
-                'enableUfs', 'valYearStart', 'valMonthStart', 'valYearEnd', 'valMonthEnd']
+                'enableUfs', 'valYearStart', 'valMonthStart', 'valYearEnd', 'valMonthEnd', 
+                'valUf', 'valDf']
     for w, wordKey in enumerate(wordKeys):
         if w == 0:
             val = 0
         elif w >= 1 and w <= 4:
             val = True
-        else:
+        elif w >= 5 and w <= 9:
             val = None
+        else:
+            val = []
         if wordKey not in st.session_state:
             st.session_state[wordKey] = val
     main()
+    
+#https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
