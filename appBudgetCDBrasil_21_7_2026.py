@@ -11,6 +11,7 @@ import zstandard as zstd
 from datetime import date
 from unidecode import unidecode
 from brutils.ibge.uf import convert_uf_to_name
+from brutils.currency import format_currency
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 class displayQuery():
@@ -40,6 +41,10 @@ class displayQuery():
             nameState = convert_uf_to_name(uf)
         except:
             nameState = "não identificável"
+        if nNames > 999:
+            nNames = format_currency(nNames).replace('R$', '').split(',')[0]
+        if nResults > 999:
+            nResults = format_currency(nResults).replace('R$', '').split(',')[0]
         exprSearch = f":material/date_range: **período**: {monthStart} de {yearStart} ({indStart}/{yearStart}) a {monthEnd} de {yearEnd} ({indEnd}/{yearEnd})<br>"
         exprSearch += f":material/flag_2: **estado**: {uf} ({nameState})<br>"
         exprSearch += f":material/numbers: **deputados**: {nNames}<br>"
