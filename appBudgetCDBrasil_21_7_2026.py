@@ -327,8 +327,13 @@ class main():
     def isRunning(self):
         if os.path.exists(self.dirDbZsdtSt):
             self.dirDbZsdt = self.dirDbZsdtSt
+            fileCss = r'C:\Users\ACER\Documents\css\configCotasCd.css'
         else:
             self.dirDbZsdt = self.dirDbZsdtGit
+            fileCss = 'configCotasCd.css'
+        with open(fileCss) as f:
+            css = f.read()
+        st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
             
     def initiationSql(self):
         objOperat = operationFiles(self.tableDb)
