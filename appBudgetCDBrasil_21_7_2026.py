@@ -63,16 +63,16 @@ class windowStream():
         self.keys = sorted(list(filters.keys()))
         self.fileDb = fileDb
         self.tableDb = tableDb
-        self.helpPlace = {1:[":material/date_range:", "data inicial", "Seleção da data inicial", 5, 6, "ano", "mês"], 
-                          2:[":material/date_range:", "data final", "Seleção da data final", 7, 8, "ano", "mês"], 
-                          3:[":material/flag:", "estado", "Seleção da unidade federativa", 9, "sigla"], 
-                          4:[":material/person_raised_hand:", "deputados federais", "Seleção de deputados federais", 10, "nome"], 
-                          5:[":material/no_accounts:", "deputados federais", "Sem nomes para seleção", 10, "nome"]}
+        self.helpPlace = {1:[":material/date_range:", "data inicial", "Selecione a data inicial (mês e ano).", 5, 6, "ano", "mês"], 
+                          2:[":material/date_range:", "data final", "Selecione a data final (mês e ano).", 7, 8, "ano", "mês"], 
+                          3:[":material/flag:", "estado", "Selecione uma unidade federativa por vez", 9, "sigla"], 
+                          4:[":material/person_raised_hand:", "deputados federais", "Selecione um ou mais deputados federais por vez", 10, "nome"], 
+                          5:[":material/no_accounts:", "deputados federais", "Não existem deputados federais para selecionar.", 10, "nome"]}
                    
     def insertWidget(self):
         nSize = 4
         colStart, colEnd, colUf, colDf = st.columns([nSize*3, nSize*3, nSize*1.9, nSize**2], vertical_alignment="center", 
-                                                    width="stretch")
+                                                     width="stretch")
         self.optMonthsAll = list(calendar.month_name)[1:]
         self.indMonths = [w + 1 for w in range(len(self.optMonthsAll))]
         optYears = self.filters[self.keys[0]] 
@@ -84,6 +84,8 @@ class windowStream():
         nOptUfs = len(optUfs)
         optUfs.insert(0, '')
         self.optMonths = []
+        self.yearNow = date.today().year
+        self.monthNow = date.today().month
         with colStart:
             dictVal = self.helpPlace[1]
             with st.container(border=True, width="stretch", horizontal_alignment="center", 
@@ -135,7 +137,7 @@ class windowStream():
                               vertical_alignment="center"):
                 strStart = self.formatLabel(dictVal[0], dictVal[3], dictVal[1])
                 st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
-                            anchors=True, help=dictVal[2])
+                            anchors=True, help=f"{dictVal[2]} ({nOptUfs} existentes)")
                 if all([self.yearStart, self.monthStart, self.yearEnd, self.monthEnd]):
                     st.session_state[wordKeys[4]] = False
                 else:
@@ -166,19 +168,27 @@ class windowStream():
                 nResults = len(results)
                 self.nResults = nResults
                 if nResults >= 1: 
-                    dictVal = self.helpPlace[4]            
+                    dictVal = self.helpPlace[4] 
                     resultDisab = False
                 else:
                     dictVal = self.helpPlace[5]
                     resultDisab = True 
+                nNames = len(optsName)
+                encText = ""
+                if nNames == 1:
+                    encText = f" (somente {nNames} encontrado)."
+                elif nNames > 1:
+                    encText = f" ({nNames} encontrados)."
+                dictHelp =  dictVal[2] + encText
         with colDf:
             with st.container(border=True, width="stretch", horizontal_alignment="center", 
                               vertical_alignment="center"):
                 strStart = self.formatLabel(dictVal[0], dictVal[3], dictVal[1])
                 st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
-                            anchors=True, help=dictVal[2])
+                            anchors=True, help=dictHelp)
                 allSelDf = st.multiselect(label=dictVal[1], options=optsName, width="stretch", label_visibility="collapsed", 
-                                          key=wordKeys[dictVal[3]], placeholder="Deputados a selecionar", accept_new_options= True, disabled=resultDisab)
+                                          key=wordKeys[dictVal[3]], placeholder=dictVal[4], 
+                                          accept_new_options=True, disabled=resultDisab)
         for selDf in allSelDf:
             objDisplay = displayQuery('Consulta de dados')
             if len(selDf) > 0:
@@ -191,12 +201,10 @@ class windowStream():
                 objDisplay.queryDf(newCotas, self.cols, selDf)
         
     def defineMonths(self, num):
-        yearNow = date.today().year
-        monthNow = date.today().month
         yearSel = self.yearStart
         self.optMonths = list(calendar.month_name)[1:]
-        if yearSel == yearNow:
-            self.optMonths = self.optMonths[:monthNow]
+        if yearSel == self.yearNow:
+            self.optMonths = self.optMonths[:self.monthNow]
         self.optMonths.insert(0, '')
         if num == 1:
             st.session_state[wordKeys[num]] = False   
