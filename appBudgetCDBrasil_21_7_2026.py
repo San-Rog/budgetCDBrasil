@@ -25,7 +25,7 @@ class displayQuery():
         st.markdown(f"{self.title} <-> Deputado(a) Federal {selDf} <-> {nLanc} lançamento(s)")
         st.dataframe(data=df, width="stretch", hide_index=True)
     
-    @st.dialog(title='Resultado', width="small", icon=":material/analytics:", on_dismiss="ignore") 
+    @st.dialog(title='Resultado', width="medium", icon=":material/analytics:", on_dismiss="ignore") 
     def menSearch(self, *args):
         nNames = args[0]
         nResults = args[1]
@@ -49,7 +49,12 @@ class displayQuery():
         exprSearch += f":material/flag_2: **estado**: {uf} ({nameState})<br>"
         exprSearch += f":material/numbers: **deputados**: {nNames}<br>"
         exprSearch += f":material/article: **registros**: {nResults}<br>"        
-        st.markdown(exprSearch, unsafe_allow_html=True)    
+        st.markdown(exprSearch, unsafe_allow_html=True)
+
+    @st.dialog(title='Erro', width="small", icon=":material/error:", on_dismiss="ignore") 
+    def mensApp(self, *args):
+        text = args[0]
+        st.markdown(text, unsafe_allow_html=True)
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
@@ -58,10 +63,13 @@ class windowStream():
         self.keys = sorted(list(filters.keys()))
         self.fileDb = fileDb
         self.tableDb = tableDb
+        self.helpPlace = {1:['Seleção da data inicial'], 
+                          2:['Seleção da data final'], 
+                          3:['Seleção da unidade federativa']}
                    
     def insertWidget(self):
         nSize = 4
-        colStart, colEnd, colUf, colDf = st.columns([nSize*2, nSize*2, nSize*1.2, nSize**2])
+        colStart, colEnd, colUf, colDf = st.columns([nSize*2.5, nSize*2.5, nSize*1.6, nSize**2])
         self.optMonthsAll = list(calendar.month_name)[1:]
         self.indMonths = [w + 1 for w in range(len(self.optMonthsAll))]
         optYears = self.filters[self.keys[0]] 
@@ -74,25 +82,27 @@ class windowStream():
         optUfs.insert(0, '')
         self.optMonths = []
         with colStart:
-            st.markdown(":material/date_range: data inicial", unsafe_allow_html=True, text_alignment="center", 
-                        anchors=True)
-            colYearStart, colMonthStart = st.columns([nSize*2, nSize*2.5])
+            strStart = self.formatLabel(":material/date_range:", 5, 6, 'data inicial')
+            st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
+                        anchors=True, help=self.helpPlace[1][0])
+            colYearStart, colMonthStart = st.columns(2)
             self.yearStart = colYearStart.selectbox(label='ano início', options=optYears, width="stretch", 
-                                                    label_visibility="collapsed", key=wordKeys[6])
+                                                    label_visibility="collapsed", key=wordKeys[5])
             if self.yearStart:
                self.defineMonths(1)
             else:
                self.clearFields(1)
             self.monthStart = colMonthStart.selectbox(label='mês início', options=self.optMonths, width="stretch", 
-                                                      label_visibility="collapsed", disabled=st.session_state[wordKeys[1]])
+                                                      label_visibility="collapsed", key=wordKeys[6], disabled=st.session_state[wordKeys[1]])
             if self.monthStart:
                self.defineMonths(2)
             else:
                self.clearFields(2)
         with colEnd:
-            st.markdown(":material/date_range: data final", unsafe_allow_html=True, text_alignment="center", 
-                        anchors=True)
-            colYearEnd, colMonthEnd = st.columns([nSize*2, nSize*2.5])
+            strStart = self.formatLabel(":material/date_range:", 7, 8, 'data final')
+            st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
+                        anchors=True, help=self.helpPlace[2][0])
+            colYearEnd, colMonthEnd = st.columns(2)
             self.yearEnd = colYearEnd.selectbox(label='ano final', options=self.optYearsEnd, width="stretch", key=wordKeys[7], 
                                                 label_visibility="collapsed", disabled=st.session_state[wordKeys[2]])
             if self.yearEnd:
@@ -107,13 +117,14 @@ class windowStream():
             except:
                 pass
         with colUf:
-            st.markdown(":material/flag: estados", unsafe_allow_html=True, text_alignment="center", 
-                        anchors=True)
+            strStart = self.formatLabel(":material/flag:", 9, 'estado')
+            st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
+                        anchors=True, help=self.helpPlace[3][0])
             if all([self.yearStart, self.monthStart, self.yearEnd, self.monthEnd]):
                 st.session_state[wordKeys[4]] = False
             else:
                 st.session_state[wordKeys[4]] = True
-            uf = st.selectbox(label="estados", options=optUfs, width="stretch", label_visibility="collapsed", 
+            uf = st.selectbox(label="estado", options=optUfs, width="stretch", label_visibility="collapsed", 
                               key=wordKeys[9], placeholder="UF a selecionar", disabled=st.session_state[wordKeys[4]], 
                               on_change=self.changeState)
             results = []
@@ -137,12 +148,14 @@ class windowStream():
             except:
                 pass
             nResults = len(results)
+            self.nResults = nResults
             if nResults >= 1: 
                 resultDisab = False
             else:
                 resultDisab = True 
         with colDf:
-            st.markdown(":material/person_raised_hand: deputados federais", unsafe_allow_html=True, text_alignment="center", 
+            strStart = self.formatLabel(":material/person_raised_hand:", 10, 'deputados federais')
+            st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
                         anchors=True)
             allSelDf = colDf.multiselect(label="deputado federais", options=optsName, width="stretch", label_visibility="collapsed", 
                                          key=wordKeys[10], placeholder="Deputados a selecionar", accept_new_options= True, disabled=resultDisab)
@@ -210,7 +223,28 @@ class windowStream():
                 st.session_state[wordKeys[10]]= []
                 
     def changeState(self):
-        st.session_state[wordKeys[11]] = 0    
+        st.session_state[wordKeys[11]] = 0   
+
+    def formatLabel(self, *args):
+        try:
+            symbol = args[0]
+            numOne = args[1]
+            numTwo = args[2]
+            exprMark = args[3]
+            condTest = st.session_state[wordKeys[numOne]] and st.session_state[wordKeys[numTwo]]
+        except:
+            symbol = args[0]
+            numOne = args[1]
+            exprMark = args[2]
+            if numOne == 10:
+                condTest = self.nResults >= 1
+            else:
+                condTest = st.session_state[wordKeys[numOne]]
+        if condTest:
+            strStart = f":blue[{symbol} **{exprMark}** :material/check:]"
+        else:
+            strStart = f":gray[{symbol} {exprMark} :material/close:]"
+        return strStart        
     
 class operationFiles():
     def __init__(self, tableDb):    
@@ -337,22 +371,28 @@ class main():
             
     def initiationSql(self):
         objOperat = operationFiles(self.tableDb)
+        objDisplay = displayQuery('Resultado da pesquisa')
         if st.session_state[wordKeys[0]] == 1:
             verifyZsdt = objOperat.mergeFilesZsdt(self.dirDbZsdt, self.fileDbZsdt)
+            if not verifyZsdt:
+                mensApp = "Não há base de dados (:material/database:) para leitura!<br>Execute a rotina de scraping!"
+                objDisplay.mensApp(mensApp)
         else:
             verifyZsdt = True
         if verifyZsdt:
             process = psutil.Process(os.getpid())
-            memory_info = process.memory_info()
-            memory_used_mb = memory_info.rss / (1024 * 1024 * 1024)
-            #st.write(f"Memória usada: {memory_used_mb:.2f} GB") 
-            st.session_state[wordKeys[0]] += 1
-            self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
-            self.sqlCols = objOperat.columnSql(self.sqlRead) 
-            self.sqlFilters = objOperat.distinctFields(self.sqlRead, self.sqlCols)
-            objWindow = windowStream(self.sqlCols, self.sqlFilters, self.fileDb, self.tableDb)
-            objWindow.insertWidget()
-
+            memoryInfo = process.memory_info()
+            memoryUsedMb = memoryInfo.rss / (1024 * 1024 * 1024)
+            if memoryUsedMb > 1:
+                mensApp = "Foi extrapolado o limite de 1GB. Modifique as opções selecionadas."
+            else:
+                st.session_state[wordKeys[0]] += 1
+                self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
+                self.sqlCols = objOperat.columnSql(self.sqlRead) 
+                self.sqlFilters = objOperat.distinctFields(self.sqlRead, self.sqlCols)
+                objWindow = windowStream(self.sqlCols, self.sqlFilters, self.fileDb, self.tableDb)
+                objWindow.insertWidget()
+            
 if __name__ == '__main__':
     global wordKeys
     wordKeys = ['count', 'enableMonthStart', 'enableYearEnd', 'enableMonthEnd', 
