@@ -63,13 +63,16 @@ class windowStream():
         self.keys = sorted(list(filters.keys()))
         self.fileDb = fileDb
         self.tableDb = tableDb
-        self.helpPlace = {1:['Seleção da data inicial'], 
-                          2:['Seleção da data final'], 
-                          3:['Seleção da unidade federativa']}
+        self.helpPlace = {1:[":material/date_range:", "data inicial", "Seleção da data inicial", 5, 6, "ano", "mês"], 
+                          2:[":material/date_range:", "data final", "Seleção da data final", 7, 8, "ano", "mês"], 
+                          3:[":material/flag:", "estado", "Seleção da unidade federativa", 9, "sigla"], 
+                          4:[":material/person_raised_hand:", "deputados federais", "Seleção de deputados federais", 10, "nome"], 
+                          5:[":material/no_accounts:", "deputados federais", "Sem nomes para seleção", 10, "nome"]}
                    
     def insertWidget(self):
         nSize = 4
-        colStart, colEnd, colUf, colDf = st.columns([nSize*2.5, nSize*2.5, nSize*1.6, nSize**2])
+        colStart, colEnd, colUf, colDf = st.columns([nSize*3, nSize*3, nSize*1.9, nSize**2], vertical_alignment="center", 
+                                                    width="stretch")
         self.optMonthsAll = list(calendar.month_name)[1:]
         self.indMonths = [w + 1 for w in range(len(self.optMonthsAll))]
         optYears = self.filters[self.keys[0]] 
@@ -82,83 +85,100 @@ class windowStream():
         optUfs.insert(0, '')
         self.optMonths = []
         with colStart:
-            strStart = self.formatLabel(":material/date_range:", 5, 6, 'data inicial')
-            st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
-                        anchors=True, help=self.helpPlace[1][0])
-            colYearStart, colMonthStart = st.columns(2)
-            self.yearStart = colYearStart.selectbox(label='ano início', options=optYears, width="stretch", 
-                                                    label_visibility="collapsed", key=wordKeys[5])
-            if self.yearStart:
-               self.defineMonths(1)
-            else:
-               self.clearFields(1)
-            self.monthStart = colMonthStart.selectbox(label='mês início', options=self.optMonths, width="stretch", 
-                                                      label_visibility="collapsed", key=wordKeys[6], disabled=st.session_state[wordKeys[1]])
-            if self.monthStart:
-               self.defineMonths(2)
-            else:
-               self.clearFields(2)
-        with colEnd:
-            strStart = self.formatLabel(":material/date_range:", 7, 8, 'data final')
-            st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
-                        anchors=True, help=self.helpPlace[2][0])
-            colYearEnd, colMonthEnd = st.columns(2)
-            self.yearEnd = colYearEnd.selectbox(label='ano final', options=self.optYearsEnd, width="stretch", key=wordKeys[7], 
-                                                label_visibility="collapsed", disabled=st.session_state[wordKeys[2]])
-            if self.yearEnd:
-               self.defineMonths(3)
-            else:
-               self.clearFields(3)
-            self.monthEnd = colMonthEnd.selectbox(label='mês final', options=self.optMonthsEnd, width="stretch", key=wordKeys[8],
-                                                  label_visibility="collapsed", disabled=st.session_state[wordKeys[3]])
-            try:
-                if not self.monthEnd:
-                    self.clearFields(4)
-            except:
-                pass
-        with colUf:
-            strStart = self.formatLabel(":material/flag:", 9, 'estado')
-            st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
-                        anchors=True, help=self.helpPlace[3][0])
-            if all([self.yearStart, self.monthStart, self.yearEnd, self.monthEnd]):
-                st.session_state[wordKeys[4]] = False
-            else:
-                st.session_state[wordKeys[4]] = True
-            uf = st.selectbox(label="estado", options=optUfs, width="stretch", label_visibility="collapsed", 
-                              key=wordKeys[9], placeholder="UF a selecionar", disabled=st.session_state[wordKeys[4]], 
-                              on_change=self.changeState)
-            results = []
-            optsName = []
-            try:
-                if not uf:
-                    self.clearFields(5)
+            dictVal = self.helpPlace[1]
+            with st.container(border=True, width="stretch", horizontal_alignment="center", 
+                              vertical_alignment="center"):
+                strStart = self.formatLabel(dictVal[0], dictVal[3], dictVal[4], dictVal[1])
+                st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
+                            anchors=True, help=dictVal[2])
+                colYearStart, colMonthStart = st.columns([6, 8], vertical_alignment="center", width="stretch")
+                self.yearStart = colYearStart.selectbox(label=dictVal[1], options=optYears, width="stretch", 
+                                                        label_visibility="collapsed", key=wordKeys[dictVal[3]],
+                                                        placeholder=dictVal[5])
+                if self.yearStart:
+                   self.defineMonths(1)
                 else:
-                    try:
-                        if all([uf is not None, uf.strip() != '']):
-                            objOperat = operationFiles(self.tableDb)
-                            indStart = self.optMonthsAll.index(self.monthStart) 
-                            indEnd = self.optMonths.index(self.monthEnd)
-                            optsName, results = objOperat.searchFields(self.fileDb, self.cols, indStart, self.yearStart, indEnd, self.yearEnd, uf, self.indMonths)
-                            if st.session_state[wordKeys[11]] == 0:
-                                objDisplay = displayQuery('Resultado da pesquisa')
-                                objDisplay.menSearch(len(optsName), len(results), self.yearStart, self.monthStart, self.yearEnd, self.monthEnd, uf)
-                            st.session_state[wordKeys[11]] += 1
-                    except:
-                        pass
-            except:
-                pass
-            nResults = len(results)
-            self.nResults = nResults
-            if nResults >= 1: 
-                resultDisab = False
-            else:
-                resultDisab = True 
+                   self.clearFields(1)
+                self.monthStart = colMonthStart.selectbox(label=dictVal[1], options=self.optMonths, width="stretch", 
+                                                          label_visibility="collapsed", key=wordKeys[dictVal[4]], 
+                                                          disabled=st.session_state[wordKeys[1]], placeholder=dictVal[6])
+                if self.monthStart:
+                   self.defineMonths(2)
+                else:
+                   self.clearFields(2)
+        with colEnd:
+            dictVal = self.helpPlace[2]
+            with st.container(border=True, width="stretch", horizontal_alignment="center", 
+                              vertical_alignment="center"):
+                strStart = self.formatLabel(dictVal[0], dictVal[3], dictVal[4], dictVal[1])
+                st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
+                            anchors=True, help=dictVal[2])
+                colYearEnd, colMonthEnd = st.columns([6, 8], vertical_alignment="center", width="stretch")
+                self.yearEnd = colYearEnd.selectbox(label=dictVal[1], options=self.optYearsEnd, width="stretch", 
+                                                    key=wordKeys[dictVal[3]], label_visibility="collapsed", 
+                                                    disabled=st.session_state[wordKeys[2]], placeholder=dictVal[5])
+                if self.yearEnd:
+                   self.defineMonths(3)
+                else:
+                   self.clearFields(3)
+                self.monthEnd = colMonthEnd.selectbox(label=dictVal[1], options=self.optMonthsEnd, width="stretch", key=wordKeys[dictVal[4]],
+                                                      label_visibility="collapsed", disabled=st.session_state[wordKeys[3]], 
+                                                      placeholder=dictVal[6])
+                try:
+                    if not self.monthEnd:
+                        self.clearFields(4)
+                except:
+                    pass
+        with colUf:
+            dictVal = self.helpPlace[3]
+            with st.container(border=True, width="stretch", horizontal_alignment="center", 
+                              vertical_alignment="center"):
+                strStart = self.formatLabel(dictVal[0], dictVal[3], dictVal[1])
+                st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
+                            anchors=True, help=dictVal[2])
+                if all([self.yearStart, self.monthStart, self.yearEnd, self.monthEnd]):
+                    st.session_state[wordKeys[4]] = False
+                else:
+                    st.session_state[wordKeys[4]] = True
+                uf = st.selectbox(label=dictVal[1], options=optUfs, width="stretch", label_visibility="collapsed", 
+                                  key=wordKeys[dictVal[3]], placeholder=dictVal[4], disabled=st.session_state[wordKeys[4]], 
+                                  on_change=self.changeState)
+                results = []
+                optsName = []
+                try:
+                    if not uf:
+                        self.clearFields(5)
+                    else:
+                        try:
+                            if all([uf is not None, uf.strip() != '']):
+                                objOperat = operationFiles(self.tableDb)
+                                indStart = self.optMonthsAll.index(self.monthStart) 
+                                indEnd = self.optMonths.index(self.monthEnd)
+                                optsName, results = objOperat.searchFields(self.fileDb, self.cols, indStart, self.yearStart, indEnd, self.yearEnd, uf, self.indMonths)
+                                if st.session_state[wordKeys[11]] == 0:
+                                    objDisplay = displayQuery('Resultado da pesquisa')
+                                    objDisplay.menSearch(len(optsName), len(results), self.yearStart, self.monthStart, self.yearEnd, self.monthEnd, uf)
+                                st.session_state[wordKeys[11]] += 1
+                        except:
+                            pass
+                except:
+                    pass
+                nResults = len(results)
+                self.nResults = nResults
+                if nResults >= 1: 
+                    dictVal = self.helpPlace[4]            
+                    resultDisab = False
+                else:
+                    dictVal = self.helpPlace[5]
+                    resultDisab = True 
         with colDf:
-            strStart = self.formatLabel(":material/person_raised_hand:", 10, 'deputados federais')
-            st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
-                        anchors=True)
-            allSelDf = colDf.multiselect(label="deputado federais", options=optsName, width="stretch", label_visibility="collapsed", 
-                                         key=wordKeys[10], placeholder="Deputados a selecionar", accept_new_options= True, disabled=resultDisab)
+            with st.container(border=True, width="stretch", horizontal_alignment="center", 
+                              vertical_alignment="center"):
+                strStart = self.formatLabel(dictVal[0], dictVal[3], dictVal[1])
+                st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
+                            anchors=True, help=dictVal[2])
+                allSelDf = st.multiselect(label=dictVal[1], options=optsName, width="stretch", label_visibility="collapsed", 
+                                          key=wordKeys[dictVal[3]], placeholder="Deputados a selecionar", accept_new_options= True, disabled=resultDisab)
         for selDf in allSelDf:
             objDisplay = displayQuery('Consulta de dados')
             if len(selDf) > 0:
@@ -236,10 +256,7 @@ class windowStream():
             symbol = args[0]
             numOne = args[1]
             exprMark = args[2]
-            if numOne == 10:
-                condTest = self.nResults >= 1
-            else:
-                condTest = st.session_state[wordKeys[numOne]]
+            condTest = st.session_state[wordKeys[numOne]]
         if condTest:
             strStart = f":blue[{symbol} **{exprMark}** :material/check:]"
         else:
@@ -412,5 +429,5 @@ if __name__ == '__main__':
         if wordKey not in st.session_state:
             st.session_state[wordKey] = val
     main()
-    
+   
 #https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
