@@ -14,16 +14,59 @@ from brutils.ibge.uf import convert_uf_to_name
 from brutils.currency import format_currency
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
+class acessories():
+    def __init__(self, num):
+        self.num = num
+    
+    def convertNumber(self, mode):
+        if mode == 0:
+            if self.num <= 999:
+                num = self.num
+            else:
+                num = format_currency(self.num).replace('R$', '').split(',')[0]
+        else:
+            num = format_currency(self.num).replace('R$', '')
+        return num 
+
 class displayQuery():
     def __init__(self, title):
         self.title = title 
+    
+    def queryDf(self, cols, allSelDf, results, colData):
+        nSelDf = len(allSelDf)
+        numStr = f"{nSelDf} deputado federal" if nSelDf <= 1 else f"{nSelDf} deputados federais" 
+        colData.markdown(self.title, unsafe_allow_html=False, help=f"Exibe os registros obtidos em {siteCd}.", 
+                         width="stretch", text_alignment="center", anchors=True)
+        for s, selDf in enumerate(allSelDf):
+            cotas = [result for result in results if result[15] == selDf]
+            newCotas = []
+            for c, cota in enumerate(cotas):
+                newCota = list(cota)
+                newCota[0] = acessories(c+1).convertNumber(0)
+                newCotas.append(newCota)
+            cols[0] = "#"
+            df = pd.DataFrame(newCotas, columns=cols)
+            arrow = ":material/arrow_range:"
+            nLanc = len(df)
+            exprLanc = f"{nLanc} lançamento" if nLanc <= 1 else f"{acessories(nLanc).convertNumber(0)} lançamentos"
+            colData.markdown(f":material/tag: {s+1}/{nSelDf} {arrow} deputado(a) federal {selDf} {arrow} {exprLanc}")
+            colData.dataframe(data=df, width="stretch", hide_index=True)
+            if nSelDf > 1:
+                colData.divider(width="stretch")
+    
+    @st.dialog(title='Colunas', width="medium", icon=":material/analytics:", on_dismiss="ignore")
+    def filterDf(self, cols):
+        colsMark = [w for w in range(len(cols))]
+        df = pd.DataFrame({"Filtros": cols})
         
-    def queryDf(self, data, cols, selDf):
-        cols[0] = "#"
-        df = pd.DataFrame(data, columns=cols)
-        nLanc = len(df)
-        st.markdown(f"{self.title} <-> Deputado(a) Federal {selDf} <-> {nLanc} lançamento(s)")
-        st.dataframe(data=df, width="stretch", hide_index=True)
+        evento = st.dataframe(df, key="tabela", on_select="rerun", 
+                              selection_mode="multi-row", selection_default={"selection": {"rows":colsMark}})
+        linhas_selecionadas = evento.selection.rows
+        st.write(linhas_selecionadas)
+        if linhas_selecionadas:
+            for linha in linhas_selecionadas:
+                df_filtrado = df.iloc[linha]
+                st.write("Valores selecionados:", list(df_filtrado)) 
     
     @st.dialog(title='Resultado', width="medium", icon=":material/analytics:", on_dismiss="ignore") 
     def menSearch(self, *args):
@@ -41,14 +84,12 @@ class displayQuery():
             nameState = convert_uf_to_name(uf)
         except:
             nameState = "não identificável"
-        if nNames > 999:
-            nNames = format_currency(nNames).replace('R$', '').split(',')[0]
-        if nResults > 999:
-            nResults = format_currency(nResults).replace('R$', '').split(',')[0]
+        nums = [nNames, nResults]
+        newNums = list(map(lambda num: acessories(num).convertNumber(0), nums))
         exprSearch = f":material/date_range: **período**: {monthStart} de {yearStart} ({indStart}/{yearStart}) a {monthEnd} de {yearEnd} ({indEnd}/{yearEnd})<br>"
         exprSearch += f":material/flag_2: **estado**: {uf} ({nameState})<br>"
-        exprSearch += f":material/numbers: **deputados**: {nNames}<br>"
-        exprSearch += f":material/article: **registros**: {nResults}<br>"        
+        exprSearch += f":material/numbers: **deputados**: {newNums[0]}<br>"
+        exprSearch += f":material/article: **registros**: {newNums[1]}<br>"        
         st.markdown(exprSearch, unsafe_allow_html=True)
 
     @st.dialog(title='Erro', width="small", icon=":material/error:", on_dismiss="ignore") 
@@ -68,12 +109,14 @@ class windowStream():
                           3:[":material/flag:", "estado", "Selecione uma unidade federativa por vez", 9, "sigla"], 
                           4:[":material/person_raised_hand:", "deputados federais", "Selecione um ou mais deputados federais por vez", 10, "nome"], 
                           5:[":material/no_accounts:", "deputados federais", "Não existem deputados federais para selecionar.", 10, "nome"]}
-                   
+        self.yearNow = date.today().year
+        self.monthNow = date.today().month 
+        self.optMonthsAll = list(calendar.month_name)[1:]
+        
     def insertWidget(self):
         nSize = 4
         colStart, colEnd, colUf, colDf = st.columns([nSize*3, nSize*3, nSize*1.9, nSize**2], vertical_alignment="center", 
                                                      width="stretch")
-        self.optMonthsAll = list(calendar.month_name)[1:]
         self.indMonths = [w + 1 for w in range(len(self.optMonthsAll))]
         optYears = self.filters[self.keys[0]] 
         self.optYears = optYears
@@ -84,8 +127,6 @@ class windowStream():
         nOptUfs = len(optUfs)
         optUfs.insert(0, '')
         self.optMonths = []
-        self.yearNow = date.today().year
-        self.monthNow = date.today().month
         with colStart:
             dictVal = self.helpPlace[1]
             with st.container(border=True, width="stretch", horizontal_alignment="center", 
@@ -165,6 +206,7 @@ class windowStream():
                             pass
                 except:
                     pass
+                self.results = results
                 nResults = len(results)
                 self.nResults = nResults
                 if nResults >= 1: 
@@ -186,44 +228,76 @@ class windowStream():
                 strStart = self.formatLabel(dictVal[0], dictVal[3], dictVal[1])
                 st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
                             anchors=True, help=dictHelp)
-                allSelDf = st.multiselect(label=dictVal[1], options=optsName, width="stretch", label_visibility="collapsed", 
-                                          key=wordKeys[dictVal[3]], placeholder=dictVal[4], 
-                                          accept_new_options=True, disabled=resultDisab)
-        for selDf in allSelDf:
-            objDisplay = displayQuery('Consulta de dados')
-            if len(selDf) > 0:
-                cotas = [result for result in results if result[15] == selDf]
-                newCotas = []
-                for c, cota in enumerate(cotas):
-                    newCota = list(cota)
-                    newCota[0] = c+1
-                    newCotas.append(newCota)
-                objDisplay.queryDf(newCotas, self.cols, selDf)
+                self.allSelDf = st.multiselect(label=dictVal[1], options=optsName, width="stretch", label_visibility="collapsed", 
+                                               key=wordKeys[dictVal[3]], placeholder=dictVal[4], 
+                                               accept_new_options=True, disabled=resultDisab, on_change=self.multisel)
+        keyButt = "keyButton"
+        prefixButt = "button"
+        self.click = False
+        dictButtons = {"tela_original": ["original", f"{keyButt}Original", ":material/screen_search_desktop:", "Exibe os dados originais do site."], 
+                       "tela_modificada": ["modificada", f"{keyButt}Modify", ":material/edit_square:", "Exibe os dados com parcial modificação de formato."], 
+                       "tela_grapho": ["gráfico", f"{keyButt}Grapho", ":material/insert_chart:", "Plota gráfico com os dados."], 
+                       "tela_pdf": ["pdf", f"{keyButt}Pdf", ":material/picture_as_pdf:", "Gera arquivo PDF."], 
+                       "tela_word": ["word", f"{keyButt}Word", ":material/text_snippet:", "Gera arquivo Word."]} 
+        keyButtons = list(dictButtons.keys())
+        nKeys = len(keyButtons)
+        nSelfDf = len(self.allSelDf)
+        if nSelfDf > 0:
+            colButtons = st.columns(nKeys)
+            for c, col in enumerate(colButtons):
+                elemButton = dictButtons[keyButtons[c]]
+                col.button(label=elemButton[0], key=elemButton[1], on_click=self.checkButton, args=(c, ),  
+                           use_container_width=True, width="stretch", icon=elemButton[2], help=elemButton[3])
+            with st.container(border=st.session_state[wordKeys[13]], width="stretch", horizontal_alignment="center", 
+                              vertical_alignment="center"): 
+                self.colData = st.columns(1)[0]
+        else:
+            st.session_state[wordKeys[13]] = False
         
+    def checkButton(self, value):
+        st.session_state[wordKeys[13]] = True
+        match value:
+            case 0:
+                title = f":material/payments: Gastos com a cota parlamentar"
+                objDisplay = displayQuery(title)
+                objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData)
+            case 1:
+                pass
+            case 2:
+                #objDisplay.filterDf(self.cols)
+                pass
+            case 3:
+                #objDisplay.filterDf(self.cols)
+                pass
+            case 4:
+                #objDisplay.filterDf(self.cols)
+                pass
+    
     def defineMonths(self, num):
         yearSel = self.yearStart
         self.optMonths = list(calendar.month_name)[1:]
         if yearSel == self.yearNow:
             self.optMonths = self.optMonths[:self.monthNow]
         self.optMonths.insert(0, '')
-        if num == 1:
-            st.session_state[wordKeys[num]] = False   
-            indYearSel = self.optYears.index(yearSel)
-            self.optYearsEnd = [self.optYears[w] for w in range(len(self.optYears)) if w >= indYearSel]
-            self.optYearsEnd.insert(0, '')  
-        elif num == 2:
-            monthSel = self.monthStart
-            st.session_state[wordKeys[num]] = False
-            st.session_state[wordKeys[num+1]] = False
-        elif num == 3:
-            monthSel = self.monthStart
-            st.session_state[wordKeys[num]] = False
-            indMonthSel = self.optMonths.index(monthSel)
-            if self.yearStart == self.yearEnd:
-                self.optMonthsEnd = [self.optMonths[w] for w in range(len(self.optMonths)) if w >= indMonthSel]
-            else:
-                self.optMonthsEnd = self.optMonthsAll
-            self.optMonthsEnd.insert(0, '')
+        match num:
+            case 1:
+                st.session_state[wordKeys[num]] = False   
+                indYearSel = self.optYears.index(yearSel)
+                self.optYearsEnd = [self.optYears[w] for w in range(len(self.optYears)) if w >= indYearSel]
+                self.optYearsEnd.insert(0, '')  
+            case 2:
+                monthSel = self.monthStart
+                st.session_state[wordKeys[num]] = False
+                st.session_state[wordKeys[num+1]] = False
+            case 3:
+                monthSel = self.monthStart
+                st.session_state[wordKeys[num]] = False
+                indMonthSel = self.optMonths.index(monthSel)
+                if self.yearStart == self.yearEnd:
+                    self.optMonthsEnd = [self.optMonths[w] for w in range(len(self.optMonths)) if w >= indMonthSel]
+                else:
+                    self.optMonthsEnd = self.optMonthsAll
+                self.optMonthsEnd.insert(0, '')
     
     def clearFields(self, opt):
         match opt:
@@ -248,10 +322,15 @@ class windowStream():
                st.session_state[wordKeys[9]] = ''
                st.session_state[wordKeys[10]] = []
             case 5:
+                st.session_state[wordKeys[9]] = ''
                 st.session_state[wordKeys[10]]= []
                 
     def changeState(self):
-        st.session_state[wordKeys[11]] = 0   
+        st.session_state[wordKeys[10]]= []
+        st.session_state[wordKeys[11]] = 0 
+
+    def multisel(self):
+        st.session_state[wordKeys[13]] = False
 
     def formatLabel(self, *args):
         try:
@@ -403,7 +482,7 @@ class main():
                 mensApp = "Não há base de dados (:material/database:) para leitura!<br>Execute a rotina de scraping!"
                 objDisplay.mensApp(mensApp)
         else:
-            verifyZsdt = True
+            verifyZsdt = True        
         if verifyZsdt:
             process = psutil.Process(os.getpid())
             memoryInfo = process.memory_info()
@@ -419,10 +498,10 @@ class main():
                 objWindow.insertWidget()
             
 if __name__ == '__main__':
-    global wordKeys
+    global wordKeys, siteCd 
     wordKeys = ['count', 'enableMonthStart', 'enableYearEnd', 'enableMonthEnd', 
                 'enableUfs', 'valYearStart', 'valMonthStart', 'valYearEnd', 'valMonthEnd', 
-                'valUf', 'valDf', 'countSearch']
+                'valUf', 'valDf', 'countSearch', 'allFillters', 'borderContainer']
     for w, wordKey in enumerate(wordKeys):
         if w == 0:
             val = 0
@@ -430,12 +509,14 @@ if __name__ == '__main__':
             val = True
         elif w >= 5 and w <= 9:
             val = None
-        elif w == 10:
+        elif w in [10, 12]:
             val = []
-        else:
+        elif w == 11:
             val = 0
+        else:
+            val = False
         if wordKey not in st.session_state:
             st.session_state[wordKey] = val
-    main()
-   
+    siteCd = 'https://dadosabertos.camara.leg.br/swagger/api.html?tab=staticfile'
+    main()   
 #https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
