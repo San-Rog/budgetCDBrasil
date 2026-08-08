@@ -27,16 +27,40 @@ class acessories():
         else:
             num = format_currency(self.num).replace('R$', '')
         return num 
-
+    
+    def extractData(self):
+        dataAllSplit = []
+        nums = [str(num) for num in range(self.num[0], self.num[1]+1)]
+        for data in dataSiteCd:
+            dataSplit = data.split(seps[1])
+            if len(dataSplit) == 1:
+                dataAllSplit.append(dataSplit)
+            else:
+                for num in nums: 
+                    if any([dataSplit[0].find(num) >= 0, dataSplit[0].find(num) >= 0]):
+                        dataAllSplit.append(dataSplit)
+        return dataAllSplit
+            
 class displayQuery():
     def __init__(self, title):
         self.title = title 
     
-    def queryDf(self, cols, allSelDf, results, colData):
+    def queryDf(self, cols, allSelDf, results, colData, start, end):
         nSelDf = len(allSelDf)
         numStr = f"{nSelDf} deputado federal" if nSelDf <= 1 else f"{nSelDf} deputados federais" 
-        colData.markdown(self.title, unsafe_allow_html=False, help=f"Exibe os registros obtidos em {siteCd}.", 
-                         width="stretch", text_alignment="center", anchors=True)
+        dataAllSplit = acessories([start, end]).extractData()
+        with colData.expander(label="Detalhes da pesquisa", expanded=False, icon=":material/person_search:", 
+                              width="stretch"):
+            st.markdown(f"{self.title} {'.'.join(dataAllSplit[0])}", width="stretch")
+            df = pd.DataFrame(dataAllSplit[1:])
+            df.columns = ['link', 'download (arquivo)', 'criação (dia e horário)', 'modificação (dia e horário)', 'tamanho']
+            nDf = len(df)
+            if nDf == 1:
+                exprDetail = "Informações sobre o único arquivo-download utilizado:"
+            else:
+                exprDetail = f"Informações sobre os {nDf} arquivos-download utilizados:"
+            st.markdown(f":material/folder_info: {exprDetail}", width="stretch")
+            st.dataframe(data=df, hide_index=True)        
         for s, selDf in enumerate(allSelDf):
             cotas = [result for result in results if result[15] == selDf]
             newCotas = []
@@ -248,9 +272,7 @@ class windowStream():
                 elemButton = dictButtons[keyButtons[c]]
                 col.button(label=elemButton[0], key=elemButton[1], on_click=self.checkButton, args=(c, ),  
                            use_container_width=True, width="stretch", icon=elemButton[2], help=elemButton[3])
-            with st.container(border=st.session_state[wordKeys[13]], width="stretch", horizontal_alignment="center", 
-                              vertical_alignment="center"): 
-                self.colData = st.columns(1)[0]
+            self.colData = st.columns(1)[0]
         else:
             st.session_state[wordKeys[13]] = False
         
@@ -258,9 +280,10 @@ class windowStream():
         st.session_state[wordKeys[13]] = True
         match value:
             case 0:
-                title = f":material/payments: Gastos com a cota parlamentar"
+                title = f":material/data_table: Origem dos dados: "
                 objDisplay = displayQuery(title)
-                objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData)
+                objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
+                                   self.yearStart, self.yearEnd)
             case 1:
                 pass
             case 2:
@@ -443,6 +466,8 @@ class operationFiles():
 
 class main():
     def __init__(self):
+        global dataSiteCd
+        dataSiteCd = []
         st.session_state[wordKeys[0]] += 1
         self.dirDbZsdtSt = r"C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_chunks_Github"
         self.dirDbZsdtGit = "./quotaAll"
@@ -465,10 +490,16 @@ class main():
     def isRunning(self):
         if os.path.exists(self.dirDbZsdtSt):
             self.dirDbZsdt = self.dirDbZsdtSt
+            fileTxt = r'C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_integration\files_json_zip.txt'
             fileCss = r'C:\Users\ACER\Documents\css\configCotasCd.css'
         else:
             self.dirDbZsdt = self.dirDbZsdtGit
+            fileTxt = r'fileQuotas/files_json_zip.txt'
             fileCss = 'configCotasCd.css'
+        with open(fileTxt, 'r', encoding='utf-8') as f:
+            readTxt = f.readlines()
+        for txt in readTxt:
+            dataSiteCd.append(txt)
         with open(fileCss) as f:
             css = f.read()
         st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
@@ -498,7 +529,7 @@ class main():
                 objWindow.insertWidget()
             
 if __name__ == '__main__':
-    global wordKeys, siteCd 
+    global wordKeys, seps
     wordKeys = ['count', 'enableMonthStart', 'enableYearEnd', 'enableMonthEnd', 
                 'enableUfs', 'valYearStart', 'valMonthStart', 'valYearEnd', 'valMonthEnd', 
                 'valUf', 'valDf', 'countSearch', 'allFillters', 'borderContainer']
@@ -517,6 +548,6 @@ if __name__ == '__main__':
             val = False
         if wordKey not in st.session_state:
             st.session_state[wordKey] = val
-    siteCd = 'https://dadosabertos.camara.leg.br/swagger/api.html?tab=staticfile'
+    seps = ["***", "&&&"]
     main()   
 #https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
