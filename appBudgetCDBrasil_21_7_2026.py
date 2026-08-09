@@ -61,22 +61,32 @@ class displayQuery():
                 exprDetail = f"Informações sobre os {nDf} arquivos-download utilizados:"
             st.markdown(f":material/folder_info: {exprDetail}", width="stretch")
             st.dataframe(data=df, hide_index=True)        
-        for s, selDf in enumerate(allSelDf):
-            cotas = [result for result in results if result[15] == selDf]
-            newCotas = []
-            for c, cota in enumerate(cotas):
-                newCota = list(cota)
-                newCota[0] = acessories(c+1).convertNumber(0)
-                newCotas.append(newCota)
-            cols[0] = "#"
-            df = pd.DataFrame(newCotas, columns=cols)
-            arrow = ":material/arrow_range:"
-            nLanc = len(df)
-            exprLanc = f"{nLanc} lançamento" if nLanc <= 1 else f"{acessories(nLanc).convertNumber(0)} lançamentos"
-            colData.markdown(f":material/tag: {s+1}/{nSelDf} {arrow} deputado(a) federal {selDf} {arrow} {exprLanc}")
-            colData.dataframe(data=df, width="stretch", hide_index=True)
-            if nSelDf > 1:
-                colData.divider(width="stretch")
+        with colData.container(border=True, width="stretch", horizontal_alignment="center", 
+                               vertical_alignment="center": 
+            allDfs = []
+            for s, selDf in enumerate(allSelDf):
+                cotas = [result for result in results if result[15] == selDf]
+                newCotas = []
+                for c, cota in enumerate(cotas):
+                    newCota = list(cota)
+                    newCota[0] = acessories(c+1).convertNumber(0)
+                    newCotas.append(newCota)
+                cols[0] = "#"
+                df = pd.DataFrame(newCotas, columns=cols)
+                arrow = ":material/arrow_range:"
+                nLanc = len(df)
+                exprLanc = f"{nLanc} lançamento" if nLanc <= 1 else f"{acessories(nLanc).convertNumber(0)} lançamentos"
+                st.markdown(f":material/tag: {s+1}/{nSelDf} {arrow} deputado(a) federal {selDf} {arrow} {exprLanc}")
+                st.dataframe(data=df, width="stretch", hide_index=True)
+                if nSelDf > 1:
+                    st.divider(width="stretch")
+                    allDfs.append(df)
+            if allDfs != []:
+                dfAll = pd.concat(allDfs, ignore_index=True)
+                nDfAll = len(dfAll)
+                exprLanc = f"{nDfAll} lançamento" if nDfAll <= 1 else f"{acessories(nDfAll).convertNumber(0)} lançamentos"
+                st.markdown(f":material/group: todos os deputados federais {arrow} {exprLanc}")
+                st.dataframe(data=dfAll, width="stretch", hide_index=True)
     
     @st.dialog(title='Colunas', width="medium", icon=":material/analytics:", on_dismiss="ignore")
     def filterDf(self, cols):
