@@ -62,7 +62,7 @@ class displayQuery():
             st.markdown(f":material/folder_info: {exprDetail}", width="stretch")
             st.dataframe(data=df, hide_index=True)        
         with colData.container(border=True, width="stretch", horizontal_alignment="center", 
-                               vertical_alignment="center": 
+                               vertical_alignment="center"): 
             allDfs = []
             for s, selDf in enumerate(allSelDf):
                 cotas = [result for result in results if result[15] == selDf]
