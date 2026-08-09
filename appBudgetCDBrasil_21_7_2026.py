@@ -1,9 +1,11 @@
 import os
 import io
 import time
+import httpx
 import locale
 import psutil
 import sqlite3
+import asyncio
 import calendar
 import pandas as pd
 import streamlit as st
@@ -67,12 +69,16 @@ class displayQuery():
             for s, selDf in enumerate(allSelDf):
                 cotas = [result for result in results if result[15] == selDf]
                 newCotas = []
+                urlDocs = []
                 for c, cota in enumerate(cotas):
                     newCota = list(cota)
                     newCota[0] = acessories(c+1).convertNumber(0)
                     newCotas.append(newCota)
+                    urlDocs.append(newCota[29])                        
                 cols[0] = "#"
                 df = pd.DataFrame(newCotas, columns=cols)
+                st.write(cols)
+                st.write(urlDocs)
                 arrow = ":material/arrow_range:"
                 nLanc = len(df)
                 exprLanc = f"{nLanc} lançamento" if nLanc <= 1 else f"{acessories(nLanc).convertNumber(0)} lançamentos"
@@ -87,6 +93,16 @@ class displayQuery():
                 exprLanc = f"{nDfAll} lançamento" if nDfAll <= 1 else f"{acessories(nDfAll).convertNumber(0)} lançamentos"
                 st.markdown(f":material/group: todos os deputados federais {arrow} {exprLanc}")
                 st.dataframe(data=dfAll, width="stretch", hide_index=True)
+            for url in urlDocs:  
+                if url.strip() == '':
+                    st.markdown(f"Não cadastrado documento para a despesa.")
+                else:
+                    st.markdown(f"Link para download: {url}")
+                    try:
+                        pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
+                        st.pdf(data=pdfBytes, height="stretch")
+                    except Exception as e:
+                        st.markdown(f"Erro ao processar: {e}")
     
     @st.dialog(title='Colunas', width="medium", icon=":material/analytics:", on_dismiss="ignore")
     def filterDf(self, cols):
@@ -472,8 +488,14 @@ class operationFiles():
         optsName = sorted(list(set([result[15] for result in results])))
         nOptsName = len(optsName)
         optsName = sorted(optsName, key=lambda w: unidecode(w).lower())
-        return(optsName, results)  
+        return(optsName, results) 
 
+    async def downPdfAsync(self, url: str) -> bytes:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            return response.content    
+    
 class main():
     def __init__(self):
         global dataSiteCd
