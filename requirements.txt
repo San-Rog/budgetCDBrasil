@@ -5,3 +5,4 @@ zstandard==0.25.0
 unidecode
 brutils
 httpx
+streamlit[pdf]
