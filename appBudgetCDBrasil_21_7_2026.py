@@ -66,6 +66,7 @@ class displayQuery():
         with colData.container(border=True, width="stretch", horizontal_alignment="center", 
                                vertical_alignment="center"): 
             allDfs = []
+            cont = 0
             for s, selDf in enumerate(allSelDf):
                 cotas = [result for result in results if result[15] == selDf]
                 newCotas = []
@@ -74,11 +75,10 @@ class displayQuery():
                     newCota = list(cota)
                     newCota[0] = acessories(c+1).convertNumber(0)
                     newCotas.append(newCota)
-                    urlDocs.append(newCota[29])                        
+                    urlDocs.append(newCotas)
+                    cont += 1
                 cols[0] = "#"
                 df = pd.DataFrame(newCotas, columns=cols)
-                st.write(cols)
-                st.write(urlDocs)
                 arrow = ":material/arrow_range:"
                 nLanc = len(df)
                 exprLanc = f"{nLanc} lançamento" if nLanc <= 1 else f"{acessories(nLanc).convertNumber(0)} lançamentos"
@@ -87,22 +87,27 @@ class displayQuery():
                 if nSelDf > 1:
                     st.divider(width="stretch")
                     allDfs.append(df)
+                for url in urlDocs:
+                    for u, ur in enumerate(url):
+                        cont += u
+                        st.markdown(f":material/tag: lançamento {u+1}/{nLanc} {arrow} deputado(a) federal {selDf} {arrow}")
+                        url = ur[29]
+                        st.dataframe(data=df.iloc[[u]], width="stretch", hide_index=True)
+                        if url.strip() == '':
+                            st.markdown(f"Não cadastrado documento para a despesa.")
+                        else:
+                            st.markdown(f"Link para download: {url}")
+                            try:
+                                pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
+                                st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{cont}")
+                            except Exception as e:
+                                st.markdown(f"Erro ao processar: {e}")
             if allDfs != []:
                 dfAll = pd.concat(allDfs, ignore_index=True)
                 nDfAll = len(dfAll)
                 exprLanc = f"{nDfAll} lançamento" if nDfAll <= 1 else f"{acessories(nDfAll).convertNumber(0)} lançamentos"
                 st.markdown(f":material/group: todos os deputados federais {arrow} {exprLanc}")
                 st.dataframe(data=dfAll, width="stretch", hide_index=True)
-            for url in urlDocs:  
-                if url.strip() == '':
-                    st.markdown(f"Não cadastrado documento para a despesa.")
-                else:
-                    st.markdown(f"Link para download: {url}")
-                    try:
-                        pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
-                        st.pdf(data=pdfBytes, height="stretch")
-                    except Exception as e:
-                        st.markdown(f"Erro ao processar: {e}")
     
     @st.dialog(title='Colunas', width="medium", icon=":material/analytics:", on_dismiss="ignore")
     def filterDf(self, cols):
@@ -112,11 +117,9 @@ class displayQuery():
         evento = st.dataframe(df, key="tabela", on_select="rerun", 
                               selection_mode="multi-row", selection_default={"selection": {"rows":colsMark}})
         linhas_selecionadas = evento.selection.rows
-        st.write(linhas_selecionadas)
         if linhas_selecionadas:
             for linha in linhas_selecionadas:
                 df_filtrado = df.iloc[linha]
-                st.write("Valores selecionados:", list(df_filtrado)) 
     
     @st.dialog(title='Resultado', width="medium", icon=":material/analytics:", on_dismiss="ignore") 
     def menSearch(self, *args):
