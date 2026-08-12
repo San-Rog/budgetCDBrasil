@@ -12,8 +12,8 @@ import streamlit as st
 import zstandard as zstd
 from datetime import date
 from unidecode import unidecode
-from brutils.ibge.uf import convert_uf_to_name
 from brutils.currency import format_currency
+from brutils.ibge.uf import convert_uf_to_name
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 class acessories():
@@ -75,9 +75,9 @@ class displayQuery():
                     newCota = list(cota)
                     newCota[0] = acessories(c+1).convertNumber(0)
                     newCotas.append(newCota)
-                    urlDocs.append(newCotas)
                     cont += 1
                 cols[0] = "#"
+                urlDocs.append(newCotas)
                 df = pd.DataFrame(newCotas, columns=cols)
                 arrow = ":material/arrow_range:"
                 nLanc = len(df)
@@ -90,13 +90,13 @@ class displayQuery():
                 for url in urlDocs:
                     for u, ur in enumerate(url):
                         cont += u
-                        st.markdown(f":material/tag: lançamento {u+1}/{nLanc} {arrow} deputado(a) federal {selDf} {arrow}")
+                        st.markdown(f":material/tag: lançamento {u+1}/{nLanc} {arrow} deputado(a) federal {selDf}")
                         url = ur[29]
                         st.dataframe(data=df.iloc[[u]], width="stretch", hide_index=True)
                         if url.strip() == '':
                             st.markdown(f"Não cadastrado documento para a despesa.")
                         else:
-                            st.markdown(f"Link para download: {url}")
+                            st.markdown(f":material/link: link para download: {url}")
                             try:
                                 pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
                                 st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{cont}")
