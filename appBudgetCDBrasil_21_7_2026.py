@@ -90,17 +90,22 @@ class displayQuery():
                 for url in urlDocs:
                     for u, ur in enumerate(url):
                         cont += u
-                        st.markdown(f":material/tag: lançamento {u+1}/{nLanc} {arrow} deputado(a) federal {selDf}")
+                        st.markdown(f":material/topic: lançamento {u+1}/{nLanc} {arrow} deputado(a) federal {selDf}")
                         url = ur[29]
                         st.dataframe(data=df.iloc[[u]], width="stretch", hide_index=True)
                         if url.strip() == '':
-                            st.markdown(f"Não cadastrado documento para a despesa.")
+                            st.markdown(f":material/ad_off: documento de despesa não cadastrado.")
                         else:
                             st.markdown(f":material/link: link para download: {url}")
                             try:
                                 pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
+                                if pdfBytes.startswith(b'%PDF-'):
+                                    st.markdown(f":material/document_scanner: documento baixado") 
+                                else:
+                                    st.markdown(f":material/skull: documento não baixável de forma direta (captcha ou similiar)")
                                 st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{cont}")
                             except Exception as e:
+                                st.markdown(f":material/document_scanner: não gerado")
                                 st.markdown(f"Erro ao processar: {e}")
             if allDfs != []:
                 dfAll = pd.concat(allDfs, ignore_index=True)
