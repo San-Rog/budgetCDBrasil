@@ -47,7 +47,8 @@ class displayQuery():
     def __init__(self, title):
         self.title = title 
     
-    def queryDf(self, cols, allSelDf, results, colData, start, end):
+    def queryDf(self, cols, allSelDf, results, colData, start, end, categ):
+        st.write(categ)
         nSelDf = len(allSelDf)
         numStr = f"{nSelDf} deputado federal" if nSelDf <= 1 else f"{nSelDf} deputados federais" 
         dataAllSplit = acessories([start, end]).extractData()
@@ -295,6 +296,7 @@ class windowStream():
         dictButtons = {"tela_original": ["original", f"{keyButt}Original", ":material/screen_search_desktop:", "Exibe os dados originais do site."], 
                        "tela_modificada": ["modificada", f"{keyButt}Modify", ":material/edit_square:", "Exibe os dados com parcial modificação de formato."], 
                        "tela_grapho": ["gráfico", f"{keyButt}Grapho", ":material/insert_chart:", "Plota gráfico com os dados."], 
+                       "tela_errores": ["erros", f"{keyButt}Errores", ":material/report:", "Exibe relatório de erros da base de dados da Câmara Federal."],
                        "tela_pdf": ["pdf", f"{keyButt}Pdf", ":material/picture_as_pdf:", "Gera arquivo PDF."], 
                        "tela_word": ["word", f"{keyButt}Word", ":material/text_snippet:", "Gera arquivo Word."]} 
         keyButtons = list(dictButtons.keys())
@@ -313,13 +315,11 @@ class windowStream():
     def checkButton(self, value):
         st.session_state[wordKeys[13]] = True
         match value:
-            case 0:
+            case 0 | 1:
                 title = f":material/data_table: Origem dos dados: "
                 objDisplay = displayQuery(title)
                 objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
-                                   self.yearStart, self.yearEnd)
-            case 1:
-                pass
+                                   self.yearStart, self.yearEnd, value)
             case 2:
                 #objDisplay.filterDf(self.cols)
                 pass
@@ -327,6 +327,9 @@ class windowStream():
                 #objDisplay.filterDf(self.cols)
                 pass
             case 4:
+                #objDisplay.filterDf(self.cols)
+                pass
+            case 5:
                 #objDisplay.filterDf(self.cols)
                 pass
     
