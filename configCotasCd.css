@@ -1,9 +1,40 @@
 ::selection {
-  color: blue;
+  color: red;
   background: yellow;
 }
 
-h1 {
-    color: #1E3A8A !important;
+#h1, h2, h3, p {
+    font-size: 19px !important;
+}
+
+div[class*="keyButton"] .stButton button {
+    background-color: #c1f5b8;
+    color: white;
+    border-radius: 8px;
     font-weight: bold;
+}
+
+div[class*="keyButton"] .stButton button:hover {
+	background-color: #123d09;
+	color: white;
+	box-shadow: 2px 3px 5px #888;
+	transform: translate(3%, -8%); 
+}
+
+div[class*="keyButton"] .stButton button:active {
+	background-color: Khaki;
+	color: red;
+	cursor: wait;
+}
+
+div[class*="keyButton"] .stButton button:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+	cursor: not-allowed;
+	pointer-events: none;	
+}
+
+div[class*="keyButton"] .stButton button:not(:hover){
+	background-color: #e5f5c9;
+	color: black;	
 }
