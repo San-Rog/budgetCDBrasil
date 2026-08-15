@@ -47,8 +47,7 @@ class displayQuery():
     def __init__(self, title):
         self.title = title 
     
-    def queryDf(self, cols, allSelDf, results, colData, start, end, categ):
-        st.write(categ)
+    def queryDf(self, cols, allSelDf, results, colData, start, end):
         nSelDf = len(allSelDf)
         numStr = f"{nSelDf} deputado federal" if nSelDf <= 1 else f"{nSelDf} deputados federais" 
         dataAllSplit = acessories([start, end]).extractData()
@@ -315,11 +314,13 @@ class windowStream():
     def checkButton(self, value):
         st.session_state[wordKeys[13]] = True
         match value:
-            case 0 | 1:
+            case 0:
                 title = f":material/data_table: Origem dos dados: "
                 objDisplay = displayQuery(title)
                 objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
-                                   self.yearStart, self.yearEnd, value)
+                                   self.yearStart, self.yearEnd)
+            case 1:
+                pass
             case 2:
                 #objDisplay.filterDf(self.cols)
                 pass
