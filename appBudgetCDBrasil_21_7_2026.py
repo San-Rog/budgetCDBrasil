@@ -1,6 +1,7 @@
 import os
 import io
 import time
+import segno
 import httpx
 import locale
 import psutil
@@ -18,21 +19,21 @@ locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 class acessories():
     def __init__(self, num):
-        self.num = num
+        self.alphaNum = num
     
     def convertNumber(self, mode):
         if mode == 0:
-            if self.num <= 999:
-                num = self.num
+            if self.alphaNum <= 999:
+                num = self.alphaNum
             else:
-                num = format_currency(self.num).replace('R$', '').split(',')[0]
+                num = format_currency(self.alphaNum).replace('R$', '').split(',')[0]
         else:
-            num = format_currency(self.num).replace('R$', '')
+            num = format_currency(self.alphaNum).replace('R$', '')
         return num 
     
     def extractData(self):
         dataAllSplit = []
-        nums = [str(num) for num in range(self.num[0], self.num[1]+1)]
+        nums = [str(num) for num in range(self.alphaNum[0], self.alphaNum[1]+1)]
         for data in dataSiteCd:
             dataSplit = data.split(seps[1])
             if len(dataSplit) == 1:
@@ -42,6 +43,13 @@ class acessories():
                     if any([dataSplit[0].find(num) >= 0, dataSplit[0].find(num) >= 0]):
                         dataAllSplit.append(dataSplit)
         return dataAllSplit
+    
+    def createQrCode(self, numScale): 
+        qrcode = segno.make(self.alphaNum)
+        buf = io.BytesIO()
+        qrcode.save(buf, kind="png", scale=numScale)
+        byteIm = buf.getvalue()
+        return byteIm
             
 class displayQuery():
     def __init__(self, title):
@@ -53,16 +61,36 @@ class displayQuery():
         dataAllSplit = acessories([start, end]).extractData()
         with colData.expander(label="Detalhes da pesquisa", expanded=False, icon=":material/person_search:", 
                               width="stretch"):
-            st.markdown(f"{self.title} {'.'.join(dataAllSplit[0])}", width="stretch")
-            df = pd.DataFrame(dataAllSplit[1:])
-            df.columns = ['link', 'download (arquivo)', 'criação (dia e horário)', 'modificação (dia e horário)', 'tamanho']
+            st.markdown(self.title, help="Informa a origem oficial dos dados da pesquisa.", text_alignment="left", 
+                        width="stretch")
+            colOrig, colQrOrig = st.columns([10, 2.5], vertical_alignment="top", width="stretch", border=True)
+            linkOrig = '.'.join(dataAllSplit[0])
+            byteImg = acessories(linkOrig).createQrCode(2)
+            with colOrig:
+                st.markdown(f":material/link: link", help="Clique no link abaixo para ter acesso à base de dados.", 
+                            width="stretch", text_alignment="left") 
+                st.markdown(linkOrig, unsafe_allow_html=True, width="stretch", text_alignment="left")
+            with colQrOrig:
+                st.markdown(f":material/qr_code_2: qrcode", help="Clique na imagem, use câmera ou leitor de qrcode.", 
+                            width="stretch", text_alignment="left") 
+                st.image(byteImg, width="content", link=linkOrig)
+            dataLines = dataAllSplit[1:]
+            df = pd.DataFrame(dataLines)
+            newCols = ['link', 'nome do download', 'criação (dia e horário)', 'modificação (dia e horário)', 'tamanho']
+            df.columns = newCols
             nDf = len(df)
             if nDf == 1:
                 exprDetail = "Informações sobre o único arquivo-download utilizado:"
             else:
                 exprDetail = f"Informações sobre os {nDf} arquivos-download utilizados:"
             st.markdown(f":material/folder_info: {exprDetail}", width="stretch")
-            st.dataframe(data=df, hide_index=True)        
+            st.dataframe(data=df, 
+                         column_config={
+                                newCols[0]: st.column_config.LinkColumn(
+                                    newCols[0],
+                                    help="Clique para fazer download do arquivo."
+                                )
+                            }, hide_index=True)       
         with colData.container(border=True, width="stretch", horizontal_alignment="center", 
                                vertical_alignment="center"): 
             allDfs = []
@@ -79,6 +107,18 @@ class displayQuery():
                 cols[0] = "#"
                 urlDocs.append(newCotas)
                 df = pd.DataFrame(newCotas, columns=cols)
+                st.write(cols) 
+                for w in [23, 24, 30, 31, 32]:
+                    st.dataframe(df[cols[w]])
+                    try:
+                        df[cols[w]] = df[cols[w]].astype(float)
+                        total_soma = df[cols[w]].sum()
+                    except:
+                        df[cols[w]] = df[cols[w]].fillna(0)
+                        total_soma = df[cols[w]].sum()
+                        if len(total_soma) == 0:
+                            total_soma = 0
+                    st.metric(label=f"Total da Soma {cols[w]}", value=total_soma)
                 arrow = ":material/arrow_range:"
                 nLanc = len(df)
                 exprLanc = f"{nLanc} lançamento" if nLanc <= 1 else f"{acessories(nLanc).convertNumber(0)} lançamentos"
@@ -195,14 +235,15 @@ class windowStream():
                 colYearStart, colMonthStart = st.columns([6, 8], vertical_alignment="center", width="stretch")
                 self.yearStart = colYearStart.selectbox(label=dictVal[1], options=optYears, width="stretch", 
                                                         label_visibility="collapsed", key=wordKeys[dictVal[3]],
-                                                        placeholder=dictVal[5])
+                                                        placeholder=dictVal[5], on_change=self.changeState)
                 if self.yearStart:
                    self.defineMonths(1)
                 else:
                    self.clearFields(1)
                 self.monthStart = colMonthStart.selectbox(label=dictVal[1], options=self.optMonths, width="stretch", 
                                                           label_visibility="collapsed", key=wordKeys[dictVal[4]], 
-                                                          disabled=st.session_state[wordKeys[1]], placeholder=dictVal[6])
+                                                          disabled=st.session_state[wordKeys[1]], placeholder=dictVal[6], 
+                                                          on_change=self.changeState)
                 if self.monthStart:
                    self.defineMonths(2)
                 else:
@@ -217,14 +258,15 @@ class windowStream():
                 colYearEnd, colMonthEnd = st.columns([6, 8], vertical_alignment="center", width="stretch")
                 self.yearEnd = colYearEnd.selectbox(label=dictVal[1], options=self.optYearsEnd, width="stretch", 
                                                     key=wordKeys[dictVal[3]], label_visibility="collapsed", 
-                                                    disabled=st.session_state[wordKeys[2]], placeholder=dictVal[5])
+                                                    disabled=st.session_state[wordKeys[2]], placeholder=dictVal[5], 
+                                                    on_change=self.changeState)
                 if self.yearEnd:
                    self.defineMonths(3)
                 else:
                    self.clearFields(3)
                 self.monthEnd = colMonthEnd.selectbox(label=dictVal[1], options=self.optMonthsEnd, width="stretch", key=wordKeys[dictVal[4]],
                                                       label_visibility="collapsed", disabled=st.session_state[wordKeys[3]], 
-                                                      placeholder=dictVal[6])
+                                                      placeholder=dictVal[6], on_change=self.changeState)
                 try:
                     if not self.monthEnd:
                         self.clearFields(4)
@@ -315,7 +357,7 @@ class windowStream():
         st.session_state[wordKeys[13]] = True
         match value:
             case 0 | 1:
-                title = f":material/data_table: Origem dos dados: "
+                title = f":material/data_table: Origem dos dados oficiais"
                 objDisplay = displayQuery(title)
                 objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
                                    self.yearStart, self.yearEnd, value)
