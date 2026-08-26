@@ -107,18 +107,20 @@ class displayQuery():
                 cols[0] = "#"
                 urlDocs.append(newCotas)
                 df = pd.DataFrame(newCotas, columns=cols)
-                st.write(cols) 
+                dictNewLine = {cols[w]:[''] for w in range(len(cols))} 
+                dictNewLine[cols[0]] = ['soma']                
                 for w in [23, 24, 30, 31, 32]:
-                    st.dataframe(df[cols[w]])
+                    #st.dataframe(df[cols[w]])
                     try:
                         df[cols[w]] = df[cols[w]].astype(float)
-                        total_soma = df[cols[w]].sum()
+                        totalSum = df[cols[w]].sum()
                     except:
                         df[cols[w]] = df[cols[w]].fillna(0)
-                        total_soma = df[cols[w]].sum()
-                        if len(total_soma) == 0:
-                            total_soma = 0
-                    st.metric(label=f"Total da Soma {cols[w]}", value=total_soma)
+                        totalSum = df[cols[w]].sum()
+                    dictNewLine[cols[w]] = [totalSum]
+                    #st.metric(label=f"Total da Soma {cols[w]}", value=totalSum)
+                newLine = pd.DataFrame(dictNewLine)
+                df = pd.concat([df, newLine], ignore_index=True)
                 arrow = ":material/arrow_range:"
                 nLanc = len(df)
                 exprLanc = f"{nLanc} lançamento" if nLanc <= 1 else f"{acessories(nLanc).convertNumber(0)} lançamentos"
