@@ -58,8 +58,22 @@ class displayQuery():
     def queryDf(self, cols, allSelDf, results, colData, start, end, categ):
         nSelDf = len(allSelDf)
         numStr = f"{nSelDf} deputado federal" if nSelDf <= 1 else f"{nSelDf} deputados federais" 
-        dataAllSplit = acessories([start, end]).extractData()
-        with colData.expander(label="Detalhes da pesquisa", expanded=False, icon=":material/person_search:", 
+        self.nSelDf = nSelDf
+        self.allSelDf, self.colData, self.start, self.end = (allSelDf, colData, start, end)
+        self.cols, self.results = (cols, results)
+        self.arrow = ":material/arrow_range:"        
+        self.screenExpander()      
+        self.screenLaunch()
+        #if self.allDfs != []:
+        #    dfAll = pd.concat(self.allDfs, ignore_index=True)
+        #    nDfAll = len(dfAll)
+        #    exprLanc = f"{nDfAll} lançamento" if nDfAll <= 1 else f"{acessories(nDfAll).convertNumber(0)} lançamentos"
+        #    st.markdown(f":material/group: todos os deputados federais {self.arrow} {exprLanc}")
+        #    st.dataframe(data=dfAll, width="stretch", hide_index=True)
+    
+    def screenExpander(self):
+        dataAllSplit = acessories([self.start, self.end]).extractData()
+        with self.colData.expander(label="Detalhes da pesquisa", expanded=False, icon=":material/person_search:", 
                               width="stretch"):
             st.markdown(self.title, help="Informa a origem oficial dos dados da pesquisa.", text_alignment="left", 
                         width="stretch")
@@ -67,7 +81,7 @@ class displayQuery():
             linkOrig = '.'.join(dataAllSplit[0])
             byteImg = acessories(linkOrig).createQrCode(2)
             with colOrig:
-                st.markdown(f":material/link: link", help="Clique no link abaixo para ter acesso à base de dados.", 
+                st.markdown(f":material/link: link", help="Clique no link abaixo para ter acesso ao site que contém as bases de dados.", 
                             width="stretch", text_alignment="left") 
                 st.markdown(linkOrig, unsafe_allow_html=True, width="stretch", text_alignment="left")
             with colQrOrig:
@@ -76,63 +90,74 @@ class displayQuery():
                 st.image(byteImg, width="content", link=linkOrig)
             dataLines = dataAllSplit[1:]
             df = pd.DataFrame(dataLines)
-            newCols = ['link', 'nome do download', 'criação (dia e horário)', 'modificação (dia e horário)', 'tamanho']
+            newCols = ['link para download', 'nome do arquivo', 'criação (dia e horário)', 'modificação (dia e horário)', 'tamanho']
             df.columns = newCols
             nDf = len(df)
             if nDf == 1:
-                exprDetail = "Informações sobre o único arquivo-download utilizado:"
+                exprDetail = "Informações sobre o único arquivo-download utilizado"
+                helpDetail = "Link, nome, dia e horário de criação/modificação da base de dados existente no site oficial e/ou dali extraível"  
             else:
-                exprDetail = f"Informações sobre os {nDf} arquivos-download utilizados:"
-            st.markdown(f":material/folder_info: {exprDetail}", width="stretch")
+                exprDetail = f"Informações sobre os {nDf} arquivos-download utilizados"
+                helpDetail = "Link, nome, dia e horário de criação/modificação das bases de dados existentes no site oficial e/ou dali extraíveis"  
+            st.markdown(f":material/folder_info: {exprDetail}", width="stretch", help=helpDetail)
             st.dataframe(data=df, 
                          column_config={
                                 newCols[0]: st.column_config.LinkColumn(
                                     newCols[0],
                                     help="Clique para fazer download do arquivo."
                                 )
-                            }, hide_index=True)       
-        with colData.container(border=True, width="stretch", horizontal_alignment="center", 
-                               vertical_alignment="center"): 
-            allDfs = []
-            cont = 0
-            for s, selDf in enumerate(allSelDf):
-                cotas = [result for result in results if result[15] == selDf]
-                newCotas = []
-                urlDocs = []
-                for c, cota in enumerate(cotas):
-                    newCota = list(cota)
-                    newCota[0] = acessories(c+1).convertNumber(0)
-                    newCotas.append(newCota)
-                    cont += 1
-                cols[0] = "#"
-                urlDocs.append(newCotas)
-                df = pd.DataFrame(newCotas, columns=cols)
-                dictNewLine = {cols[w]:[''] for w in range(len(cols))} 
-                dictNewLine[cols[0]] = ['soma']                
-                for w in [23, 24, 30, 31, 32]:
-                    #st.dataframe(df[cols[w]])
-                    try:
-                        df[cols[w]] = df[cols[w]].astype(float)
-                        totalSum = df[cols[w]].sum()
-                    except:
-                        df[cols[w]] = df[cols[w]].fillna(0)
-                        totalSum = df[cols[w]].sum()
-                    dictNewLine[cols[w]] = [totalSum]
-                    #st.metric(label=f"Total da Soma {cols[w]}", value=totalSum)
-                newLine = pd.DataFrame(dictNewLine)
-                df = pd.concat([df, newLine], ignore_index=True)
-                arrow = ":material/arrow_range:"
-                nLanc = len(df)
-                exprLanc = f"{nLanc} lançamento" if nLanc <= 1 else f"{acessories(nLanc).convertNumber(0)} lançamentos"
-                st.markdown(f":material/tag: {s+1}/{nSelDf} {arrow} deputado(a) federal {selDf} {arrow} {exprLanc}")
+                            }, hide_index=True) 
+    
+    def screenLaunch(self):
+        self.allDfs = []
+        cont = 0
+        nAllSelDf = len(self.allSelDf)
+        for s, selDf in enumerate(self.allSelDf):
+            cotas = [result for result in self.results if result[15] == selDf]
+            newCotas = []
+            urlDocs = []
+            for c, cota in enumerate(cotas):
+                newCota = list(cota)
+                newCota[0] = acessories(c+1).convertNumber(0)
+                newCotas.append(newCota)
+                cont += 1
+            self.cols[0] = "#"
+            urlDocs.append(newCotas)
+            df = pd.DataFrame(newCotas, columns=self.cols)
+            dictNewLine = {self.cols[w]:[''] for w in range(len(self.cols))} 
+            dictNewLine[self.cols[0]] = ['soma']                
+            for w in [23, 24, 30, 31, 32]:
+                try:
+                    df[self.cols[w]] = df[self.cols[w]].astype(str)
+                    df[self.cols[w]] = df[self.cols[w]].round(2)
+                    totalSum = df[self.cols[w]].sum()
+                except:
+                    df[self.cols[w]] = df[self.cols[w]].fillna(0).astype(str)
+                    df[self.cols[w]] = df[self.cols[w]].round(2)
+                    totalSum = df[self.cols[w]].sum()
+                try:
+                    if int(totalSum) == 0:
+                        totalSum = 0
+                except:
+                    pass
+                dictNewLine[self.cols[w]] = [totalSum]
+            newLine = pd.DataFrame(dictNewLine)
+            df = pd.concat([df, newLine], ignore_index=True)
+            nLanc = len(df)
+            exprLanc = f"{nLanc} lançamento" if nLanc <= 1 else f"{acessories(nLanc).convertNumber(0)} lançamentos"
+            #if nAllSelDf > 1:
+            #    st.divider(width="stretch")
+            with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
+                                        vertical_alignment="center", key=cont): 
+                st.markdown(f":material/tag: {s+1}/{self.nSelDf} {self.arrow} deputado(a) federal {selDf} {self.arrow} {exprLanc}")
                 st.dataframe(data=df, width="stretch", hide_index=True)
-                if nSelDf > 1:
+                if self.nSelDf > 1:
                     st.divider(width="stretch")
-                    allDfs.append(df)
+                    self.allDfs.append(df)
                 for url in urlDocs:
                     for u, ur in enumerate(url):
                         cont += u
-                        st.markdown(f":material/topic: lançamento {u+1}/{nLanc} {arrow} deputado(a) federal {selDf}")
+                        st.markdown(f":material/topic: lançamento {u+1}/{nLanc} {self.arrow} deputado(a) federal {selDf}")
                         url = ur[29]
                         st.dataframe(data=df.iloc[[u]], width="stretch", hide_index=True)
                         if url.strip() == '':
@@ -149,13 +174,7 @@ class displayQuery():
                             except Exception as e:
                                 st.markdown(f":material/document_scanner: não gerado")
                                 st.markdown(f"Erro ao processar: {e}")
-            if allDfs != []:
-                dfAll = pd.concat(allDfs, ignore_index=True)
-                nDfAll = len(dfAll)
-                exprLanc = f"{nDfAll} lançamento" if nDfAll <= 1 else f"{acessories(nDfAll).convertNumber(0)} lançamentos"
-                st.markdown(f":material/group: todos os deputados federais {arrow} {exprLanc}")
-                st.dataframe(data=dfAll, width="stretch", hide_index=True)
-    
+        
     @st.dialog(title='Colunas', width="medium", icon=":material/analytics:", on_dismiss="ignore")
     def filterDf(self, cols):
         colsMark = [w for w in range(len(cols))]
@@ -196,6 +215,15 @@ class displayQuery():
     def mensApp(self, *args):
         text = args[0]
         st.markdown(text, unsafe_allow_html=True)
+            
+    @st.dialog(title='Erro', width="small", icon=":material/error:", dismissible=False) 
+    def mensAppFail(self, *args):
+        text = args[0]
+        st.markdown(text, unsafe_allow_html=True)
+        buttClose = st.button(label="Fechar", key="keyButton_close", icon=":material/disabled_by_default:")
+        if buttClose:
+            st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.google.com'" />
+                        """, unsafe_allow_html=True)          
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
@@ -237,7 +265,7 @@ class windowStream():
                 colYearStart, colMonthStart = st.columns([6, 8], vertical_alignment="center", width="stretch")
                 self.yearStart = colYearStart.selectbox(label=dictVal[1], options=optYears, width="stretch", 
                                                         label_visibility="collapsed", key=wordKeys[dictVal[3]],
-                                                        placeholder=dictVal[5], on_change=self.changeState)
+                                                        placeholder=dictVal[5], on_change=self.changeState, args=(1, ))
                 if self.yearStart:
                    self.defineMonths(1)
                 else:
@@ -245,7 +273,7 @@ class windowStream():
                 self.monthStart = colMonthStart.selectbox(label=dictVal[1], options=self.optMonths, width="stretch", 
                                                           label_visibility="collapsed", key=wordKeys[dictVal[4]], 
                                                           disabled=st.session_state[wordKeys[1]], placeholder=dictVal[6], 
-                                                          on_change=self.changeState)
+                                                          on_change=self.changeState, args=(2, ))
                 if self.monthStart:
                    self.defineMonths(2)
                 else:
@@ -261,14 +289,14 @@ class windowStream():
                 self.yearEnd = colYearEnd.selectbox(label=dictVal[1], options=self.optYearsEnd, width="stretch", 
                                                     key=wordKeys[dictVal[3]], label_visibility="collapsed", 
                                                     disabled=st.session_state[wordKeys[2]], placeholder=dictVal[5], 
-                                                    on_change=self.changeState)
+                                                    on_change=self.changeState, args=(3, ))
                 if self.yearEnd:
                    self.defineMonths(3)
                 else:
                    self.clearFields(3)
                 self.monthEnd = colMonthEnd.selectbox(label=dictVal[1], options=self.optMonthsEnd, width="stretch", key=wordKeys[dictVal[4]],
                                                       label_visibility="collapsed", disabled=st.session_state[wordKeys[3]], 
-                                                      placeholder=dictVal[6], on_change=self.changeState)
+                                                      placeholder=dictVal[6], on_change=self.changeState, args=(4, ))
                 try:
                     if not self.monthEnd:
                         self.clearFields(4)
@@ -287,7 +315,7 @@ class windowStream():
                     st.session_state[wordKeys[4]] = True
                 uf = st.selectbox(label=dictVal[1], options=optUfs, width="stretch", label_visibility="collapsed", 
                                   key=wordKeys[dictVal[3]], placeholder=dictVal[4], disabled=st.session_state[wordKeys[4]], 
-                                  on_change=self.changeState)
+                                  on_change=self.changeState, args=(5, ))
                 results = []
                 optsName = []
                 try:
@@ -335,7 +363,6 @@ class windowStream():
                                                accept_new_options=True, disabled=resultDisab, on_change=self.multisel)
         keyButt = "keyButton"
         prefixButt = "button"
-        self.click = False
         dictButtons = {"tela_original": ["original", f"{keyButt}Original", ":material/screen_search_desktop:", "Exibe os dados originais do site."], 
                        "tela_modificada": ["modificada", f"{keyButt}Modify", ":material/edit_square:", "Exibe os dados com parcial modificação de formato."], 
                        "tela_grapho": ["gráfico", f"{keyButt}Grapho", ":material/insert_chart:", "Plota gráfico com os dados."], 
@@ -352,11 +379,8 @@ class windowStream():
                 col.button(label=elemButton[0], key=elemButton[1], on_click=self.checkButton, args=(c, ),  
                            use_container_width=True, width="stretch", icon=elemButton[2], help=elemButton[3])
             self.colData = st.columns(1)[0]
-        else:
-            st.session_state[wordKeys[13]] = False
         
     def checkButton(self, value):
-        st.session_state[wordKeys[13]] = True
         match value:
             case 0 | 1:
                 title = f":material/data_table: Origem dos dados oficiais"
@@ -428,13 +452,15 @@ class windowStream():
                 st.session_state[wordKeys[9]] = ''
                 st.session_state[wordKeys[10]]= []
                 
-    def changeState(self):
-        st.session_state[wordKeys[10]]= []
-        st.session_state[wordKeys[11]] = 0 
-
+    def changeState(self, opt):
+        if opt not in [5]:
+            self.clearFields(opt) 
+        else:
+            st.session_state[wordKeys[10]]= []
+    
     def multisel(self):
-        st.session_state[wordKeys[13]] = False
-
+        pass
+    
     def formatLabel(self, *args):
         try:
             symbol = args[0]
@@ -596,8 +622,8 @@ class main():
         if st.session_state[wordKeys[0]] == 1:
             verifyZsdt = objOperat.mergeFilesZsdt(self.dirDbZsdt, self.fileDbZsdt)
             if not verifyZsdt:
-                mensApp = "Não há base de dados (:material/database:) para leitura!<br>Execute a rotina de scraping!"
-                objDisplay.mensApp(mensApp)
+                mensTxt = "Não ex base de dados (:material/database:) para leitura! Por favor, execute a rotina de scraping (:material/search_insights:)!"
+                objDisplay.mensAppFail(mensTxt)
         else:
             verifyZsdt = True        
         if verifyZsdt:
@@ -606,6 +632,7 @@ class main():
             memoryUsedMb = memoryInfo.rss / (1024 * 1024 * 1024)
             if memoryUsedMb > 1:
                 mensApp = "Foi extrapolado o limite de 1GB. Modifique as opções selecionadas."
+                objDisplay.mensApp(mensApp)
             else:
                 st.session_state[wordKeys[0]] += 1
                 self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
@@ -618,7 +645,7 @@ if __name__ == '__main__':
     global wordKeys, seps
     wordKeys = ['count', 'enableMonthStart', 'enableYearEnd', 'enableMonthEnd', 
                 'enableUfs', 'valYearStart', 'valMonthStart', 'valYearEnd', 'valMonthEnd', 
-                'valUf', 'valDf', 'countSearch', 'allFillters', 'borderContainer']
+                'valUf', 'valDf', 'countSearch', 'allFillters']
     for w, wordKey in enumerate(wordKeys):
         if w == 0:
             val = 0
