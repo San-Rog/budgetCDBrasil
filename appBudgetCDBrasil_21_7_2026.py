@@ -123,12 +123,16 @@ class displayQuery():
                 cont += 1
             self.cols[0] = "#"
             urlDocs.append(newCotas)
+            allLiq = [cota[-1] for cota in newCotas]
             df = pd.DataFrame(newCotas, columns=self.cols)
+            nLanc = len(df)
             dictNewLine = {self.cols[w]:[''] for w in range(len(self.cols))} 
-            dictNewLine[self.cols[0]] = ['soma']                
-            for w in [23, 24, 30, 31, 32]:
+            dictNewLine[self.cols[0]] = ['soma']  
+            sumLiq = []
+            seqNums = [23, 24, 30, 31, 32]
+            for w in seqNums:
                 try:
-                    df[self.cols[w]] = df[self.cols[w]].astype(str)
+                    df[self.cols[w]] = df[self.cols[w]].astype(float)
                     df[self.cols[w]] = df[self.cols[w]].round(2)
                     totalSum = df[self.cols[w]].sum()
                 except:
@@ -141,15 +145,19 @@ class displayQuery():
                 except:
                     pass
                 dictNewLine[self.cols[w]] = [totalSum]
+                if w == seqNums[-1]:
+                    sumLiq.append(totalSum)
             newLine = pd.DataFrame(dictNewLine)
             df = pd.concat([df, newLine], ignore_index=True)
-            nLanc = len(df)
             exprLanc = f"{nLanc} lançamento" if nLanc <= 1 else f"{acessories(nLanc).convertNumber(0)} lançamentos"
-            #if nAllSelDf > 1:
-            #    st.divider(width="stretch")
+            exprDf = f"deputado(a) federal {selDf} ({s+1})"
             with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
                                         vertical_alignment="center", key=cont): 
-                st.markdown(f":material/tag: {s+1}/{self.nSelDf} {self.arrow} deputado(a) federal {selDf} {self.arrow} {exprLanc}")
+                with st.container(border=False):
+                    colDf, colAunch, colSum = st.columns([18, 5, 5], border=True)
+                    colDf.markdown(exprDf)
+                    colAunch.markdown(exprLanc) 
+                    colSum.markdown(sumLiq[0])
                 st.dataframe(data=df, width="stretch", hide_index=True)
                 if self.nSelDf > 1:
                     st.divider(width="stretch")
@@ -157,19 +165,23 @@ class displayQuery():
                 for url in urlDocs:
                     for u, ur in enumerate(url):
                         cont += u
-                        st.markdown(f":material/topic: lançamento {u+1}/{nLanc} {self.arrow} deputado(a) federal {selDf}")
+                        colDf, colDetail = st.columns([5, 18], border=True)
+                        colDf.markdown(f"lançamento {u+1}/{nLanc+1}")
+                        colDetail.markdown(exprDf)
                         url = ur[29]
                         st.dataframe(data=df.iloc[[u]], width="stretch", hide_index=True)
+                        (colInk,) = st.columns(1, border=True)
                         if url.strip() == '':
-                            st.markdown(f":material/ad_off: documento de despesa não cadastrado.")
+                            colInk.markdown(f":material/ad_off: documento de despesa não cadastrado.")
                         else:
-                            st.markdown(f":material/link: link para download: {url}")
+                            colInk.markdown(f":material/link: link para download: {url}")
+                            (colDoc, ) = st.columns(1, border=True)
                             try:
                                 pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
                                 if pdfBytes.startswith(b'%PDF-'):
-                                    st.markdown(f":material/document_scanner: documento baixado") 
+                                    colDoc.markdown(f":material/document_scanner: documento baixado") 
                                 else:
-                                    st.markdown(f":material/skull: documento não baixável de forma direta (captcha ou similiar)")
+                                    colDoc.markdown(f":material/skull: documento não baixável de forma direta (captcha ou similiar)")
                                 st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{cont}")
                             except Exception as e:
                                 st.markdown(f":material/document_scanner: não gerado")
@@ -314,28 +326,19 @@ class windowStream():
                 else:
                     st.session_state[wordKeys[4]] = True
                 uf = st.selectbox(label=dictVal[1], options=optUfs, width="stretch", label_visibility="collapsed", 
-                                  key=wordKeys[dictVal[3]], placeholder=dictVal[4], disabled=st.session_state[wordKeys[4]], 
-                                  on_change=self.changeState, args=(5, ))
+                             key=wordKeys[dictVal[3]], placeholder=dictVal[4], disabled=st.session_state[wordKeys[4]], 
+                             on_change=self.changeState, args=(5, ))
                 results = []
                 optsName = []
-                try:
-                    if not uf:
-                        self.clearFields(5)
-                    else:
-                        try:
-                            if all([uf is not None, uf.strip() != '']):
-                                objOperat = operationFiles(self.tableDb)
-                                indStart = self.optMonthsAll.index(self.monthStart) 
-                                indEnd = self.optMonths.index(self.monthEnd)
-                                optsName, results = objOperat.searchFields(self.fileDb, self.cols, indStart, self.yearStart, indEnd, self.yearEnd, uf, self.indMonths)
-                                if st.session_state[wordKeys[11]] == 0:
-                                    objDisplay = displayQuery('Resultado da pesquisa')
-                                    objDisplay.menSearch(len(optsName), len(results), self.yearStart, self.monthStart, self.yearEnd, self.monthEnd, uf)
-                                st.session_state[wordKeys[11]] += 1
-                        except:
-                            pass
-                except:
-                    pass
+                if all([uf is not None, uf.strip() != '']):
+                    objOperat = operationFiles(self.tableDb)
+                    indStart = self.optMonthsAll.index(self.monthStart) 
+                    indEnd = self.optMonths.index(self.monthEnd)
+                    optsName, results = objOperat.searchFields(self.fileDb, self.cols, indStart, self.yearStart, indEnd, self.yearEnd, uf, self.indMonths)
+                    if st.session_state[wordKeys[11]] == 0:
+                        objDisplay = displayQuery('Resultado da pesquisa')
+                        objDisplay.menSearch(len(optsName), len(results), self.yearStart, self.monthStart, self.yearEnd, self.monthEnd, uf)
+                        st.session_state[wordKeys[11]] += 1
                 self.results = results
                 nResults = len(results)
                 self.nResults = nResults
@@ -583,14 +586,38 @@ class main():
         st.session_state[wordKeys[0]] += 1
         self.dirDbZsdtSt = r"C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_chunks_Github"
         self.dirDbZsdtGit = "./quotaAll"
-        self.setPage()
-        self.isRunning()
-        self.fileDbZsdt = "cota_parlamentar_CD_scraping.db.zst"
-        self.fileDb = "cota_parlamentar_CD_scraping.db"
-        self.tableDb = "gastos_cota_CD"
-        self.initiationSql()
+        with st.spinner(text=":material/sprint: Atualizando e iniciando o aplicativo.Por favor, aguarde...", 
+                        show_time=True, width="stretch"):
+            self.setPage()
+            self.isRunning()
+            self.fileDbZsdt = "cota_parlamentar_CD_scraping.db.zst"
+            self.fileDb = "cota_parlamentar_CD_scraping.db"
+            self.tableDb = "gastos_cota_CD"
+            self.initiationSql()
         
     def setPage(self):
+        st.markdown("""
+            <style>
+            div[data-testid="stSpinner"] {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: rgba(0, 0, 0, 0.6); /* Fundo escuro semitransparente */
+                z-index: 999999; /* Garante que fica acima de tudo */
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            div[data-testid="stSpinner"] > div {
+                cursor: wait !important;
+                color: white !important;
+                font-weight: bold;
+                font-size: 1.2rem;
+            }
+            </style>
+        """, unsafe_allow_html=True)
         st.set_page_config(
             page_title='Cotas parlamentares/Câmara dos Deputados',
             page_icon=':material/image:',
