@@ -54,6 +54,19 @@ class acessories():
 class displayQuery():
     def __init__(self, title):
         self.title = title 
+        
+    def setHtmlPlace(self, colSet):
+        if colSet is None:
+            self.placeholderBlock = st.empty()
+        else:
+            self.placeholderBlock = colSet.empty()
+        self.placeholderBlock.html(f"""
+                <div class="tela-bloqueio">
+                    <div class="custom-spinner"></div>
+                    <div class="texto-carregando">{self.title}...</div>
+                </div>
+        """)
+        return self.placeholderBlock
     
     def queryDf(self, cols, allSelDf, results, colData, start, end, categ):
         nSelDf = len(allSelDf)
@@ -244,11 +257,6 @@ class windowStream():
         self.keys = sorted(list(filters.keys()))
         self.fileDb = fileDb
         self.tableDb = tableDb
-        self.helpPlace = {1:[":material/date_range:", "data inicial", "Selecione a data inicial (mês e ano).", 5, 6, "ano", "mês"], 
-                          2:[":material/date_range:", "data final", "Selecione a data final (mês e ano).", 7, 8, "ano", "mês"], 
-                          3:[":material/flag:", "estado", "Selecione uma unidade federativa por vez", 9, "sigla"], 
-                          4:[":material/person_raised_hand:", "deputados federais", "Selecione um ou mais deputados federais por vez", 10, "nome"], 
-                          5:[":material/no_accounts:", "deputados federais", "Não existem deputados federais para selecionar.", 10, "nome"]}
         self.yearNow = date.today().year
         self.monthNow = date.today().month 
         self.optMonthsAll = list(calendar.month_name)[1:]
@@ -267,6 +275,7 @@ class windowStream():
         nOptUfs = len(optUfs)
         optUfs.insert(0, '')
         self.optMonths = []
+        self.helpPlace = helpPlace
         with colStart:
             dictVal = self.helpPlace[1]
             with st.container(border=True, width="stretch", horizontal_alignment="center", 
@@ -330,15 +339,24 @@ class windowStream():
                              on_change=self.changeState, args=(5, ))
                 results = []
                 optsName = []
-                if all([uf is not None, uf.strip() != '']):
-                    objOperat = operationFiles(self.tableDb)
-                    indStart = self.optMonthsAll.index(self.monthStart) 
-                    indEnd = self.optMonths.index(self.monthEnd)
-                    optsName, results = objOperat.searchFields(self.fileDb, self.cols, indStart, self.yearStart, indEnd, self.yearEnd, uf, self.indMonths)
-                    if st.session_state[wordKeys[11]] == 0:
-                        objDisplay = displayQuery('Resultado da pesquisa')
-                        objDisplay.menSearch(len(optsName), len(results), self.yearStart, self.monthStart, self.yearEnd, self.monthEnd, uf)
-                        st.session_state[wordKeys[11]] += 1
+                try:
+                    if not uf:
+                        self.clearFields(5)
+                    else:
+                        try:
+                            if all([uf is not None, uf.strip() != '']):
+                                objOperat = operationFiles(self.tableDb)
+                                indStart = self.optMonthsAll.index(self.monthStart) 
+                                indEnd = self.optMonths.index(self.monthEnd)
+                                optsName, results = objOperat.searchFields(self.fileDb, self.cols, indStart, self.yearStart, indEnd, self.yearEnd, uf, self.indMonths)
+                                if st.session_state[wordKeys[11]] == 0:
+                                    objDisplay = displayQuery('Resultado da pesquisa')
+                                    objDisplay.menSearch(len(optsName), len(results), self.yearStart, self.monthStart, self.yearEnd, self.monthEnd, uf)
+                                st.session_state[wordKeys[11]] += 1
+                        except:
+                            pass
+                except:
+                    pass
                 self.results = results
                 nResults = len(results)
                 self.nResults = nResults
@@ -363,7 +381,7 @@ class windowStream():
                             anchors=True, help=dictHelp)
                 self.allSelDf = st.multiselect(label=dictVal[1], options=optsName, width="stretch", label_visibility="collapsed", 
                                                key=wordKeys[dictVal[3]], placeholder=dictVal[4], 
-                                               accept_new_options=True, disabled=resultDisab, on_change=self.multisel)
+                                               accept_new_options=True, disabled=resultDisab)
         keyButt = "keyButton"
         prefixButt = "button"
         dictButtons = {"tela_original": ["original", f"{keyButt}Original", ":material/screen_search_desktop:", "Exibe os dados originais do site."], 
@@ -386,10 +404,13 @@ class windowStream():
     def checkButton(self, value):
         match value:
             case 0 | 1:
+                objDisplay = displayQuery('Buscando dados para os filtros...')
+                placeHolder = objDisplay.setHtmlPlace(self.colData)
                 title = f":material/data_table: Origem dos dados oficiais"
                 objDisplay = displayQuery(title)
                 objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
                                    self.yearStart, self.yearEnd, value)
+                placeHolder.empty()
             case 2:
                 #objDisplay.filterDf(self.cols)
                 pass
@@ -454,15 +475,14 @@ class windowStream():
             case 5:
                 st.session_state[wordKeys[9]] = ''
                 st.session_state[wordKeys[10]]= []
+                st.session_state[wordKeys[11]] = 0
                 
     def changeState(self, opt):
         if opt not in [5]:
             self.clearFields(opt) 
         else:
             st.session_state[wordKeys[10]]= []
-    
-    def multisel(self):
-        pass
+            st.session_state[wordKeys[11]] = 0
     
     def formatLabel(self, *args):
         try:
@@ -586,38 +606,55 @@ class main():
         st.session_state[wordKeys[0]] += 1
         self.dirDbZsdtSt = r"C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_chunks_Github"
         self.dirDbZsdtGit = "./quotaAll"
-        with st.spinner(text=":material/sprint: Atualizando e iniciando o aplicativo.Por favor, aguarde...", 
-                        show_time=True, width="stretch"):
-            self.setPage()
-            self.isRunning()
-            self.fileDbZsdt = "cota_parlamentar_CD_scraping.db.zst"
-            self.fileDb = "cota_parlamentar_CD_scraping.db"
-            self.tableDb = "gastos_cota_CD"
-            self.initiationSql()
+        self.setPage()
+        self.definePlace()
+        objDisplay = displayQuery(self.placeText)
+        placeHolder = objDisplay.setHtmlPlace(None)
+        self.isRunning()
+        self.fileDbZsdt = "cota_parlamentar_CD_scraping.db.zst"
+        self.fileDb = "cota_parlamentar_CD_scraping.db"
+        self.tableDb = "gastos_cota_CD"
+        self.initiationSql()
+        placeHolder.empty()
         
     def setPage(self):
-        st.markdown("""
+        st.html("""
             <style>
-            div[data-testid="stSpinner"] {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                background-color: rgba(0, 0, 0, 0.6); /* Fundo escuro semitransparente */
-                z-index: 999999; /* Garante que fica acima de tudo */
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
-            div[data-testid="stSpinner"] > div {
-                cursor: wait !important;
-                color: white !important;
-                font-weight: bold;
-                font-size: 1.2rem;
-            }
+                .tela-bloqueio {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    background-color: rgba(0, 0, 0, 0.90); 
+                    backdrop-filter: blur(10px);           
+                    z-index: 99999;                        
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                }
+                .custom-spinner {
+                    width: 60px;
+                    height: 60px;
+                    border: 6px solid #f3f3f3;
+                    border-top: 6px solid #FF4B4B; 
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                }
+                .texto-carregando {
+                    color: white;
+                    font-family: sans-serif;
+                    font-size: 1.2rem;
+                    margin-top: 15px;
+                    font-weight: 500;
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
             </style>
-        """, unsafe_allow_html=True)
+            """)
         st.set_page_config(
             page_title='Cotas parlamentares/Câmara dos Deputados',
             page_icon=':material/image:',
@@ -626,6 +663,28 @@ class main():
             menu_items=None
         )
         
+    def definePlace(self):
+        self.placeText = "Executando rotinas do app. Aguarde..." 
+        try:
+            yearStart, monthStart, yearEnd, monthEnd, valueUf, valueDf = [st.session_state[wordKeys[w]] for w in range(5, 11)]
+            keys = list(helpPlace.keys())
+            textPlace = ''
+            for d, data in enumerate([[yearStart, monthStart], [yearEnd, monthEnd]]):
+                if all(data): 
+                    allStart = helpPlace[keys[d]]
+                    symbStart = "🗓️"
+                    nameStart = allStart[1]
+                    dateStart = f"{data[0]} de {data[1]}"
+                    textPlace += f"{symbStart} {nameStart} {dateStart}<br>"
+            if valueUf:
+                self.placeText = f"🔍 Procurando lançamentos para {valueUf}<br>{textPlace}⌛ Aguarde, por favor!" 
+            if valueDf:
+                valueDfStr = '<br>'.join(valueDf)
+                st.markdown(valueDfStr)
+                self.placeText = f"🔍 Procurando lançamentos para {valueUf} e {valueDfStr}<br>{textPlace}⌛ Aguarde, por favor!"
+        except Exception as error:
+            st.write(error)
+    
     def isRunning(self):
         if os.path.exists(self.dirDbZsdtSt):
             self.dirDbZsdt = self.dirDbZsdtSt
@@ -670,6 +729,13 @@ class main():
             
 if __name__ == '__main__':
     global wordKeys, seps
+    global helpPlace
+    helpPlace = {1:[":material/date_range:", "data inicial", "Selecione a data inicial (mês e ano).", 5, 6, "ano", "mês"], 
+                 2:[":material/date_range:", "data final", "Selecione a data final (mês e ano).", 7, 8, "ano", "mês"], 
+                 3:[":material/flag:", "estado", "Selecione uma unidade federativa por vez", 9, "sigla"], 
+                 4:[":material/person_raised_hand:", "deputados federais", "Selecione um ou mais deputados federais por vez", 10, "nome"], 
+                 5:[":material/no_accounts:", "deputados federais", "Não existem deputados federais para selecionar.", 10, "nome"]}
+    
     wordKeys = ['count', 'enableMonthStart', 'enableYearEnd', 'enableMonthEnd', 
                 'enableUfs', 'valYearStart', 'valMonthStart', 'valYearEnd', 'valMonthEnd', 
                 'valUf', 'valDf', 'countSearch', 'allFillters']
