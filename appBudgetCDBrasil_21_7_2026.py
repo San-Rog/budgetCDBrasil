@@ -21,19 +21,21 @@ class acessories():
     def __init__(self, num):
         self.alphaNum = num
     
-    def convertNumber(self, mode):
+    @st.cache_data(show_spinner=False) 
+    def convertNumber(_self, mode):
         if mode == 0:
-            if self.alphaNum <= 999:
-                num = self.alphaNum
+            if _self.alphaNum <= 999:
+                num = _self.alphaNum
             else:
-                num = format_currency(self.alphaNum).replace('R$', '').split(',')[0]
+                num = format_currency(_self.alphaNum).replace('R$', '').split(',')[0]
         else:
-            num = format_currency(self.alphaNum).replace('R$', '')
+            num = format_currency(_self.alphaNum).replace('R$', '')
         return num 
     
-    def extractData(self):
+    @st.cache_data(show_spinner=False)
+    def extractData(_self):
         dataAllSplit = []
-        nums = [str(num) for num in range(self.alphaNum[0], self.alphaNum[1]+1)]
+        nums = [str(num) for num in range(_self.alphaNum[0], _self.alphaNum[1]+1)]
         for data in dataSiteCd:
             dataSplit = data.split(seps[1])
             if len(dataSplit) == 1:
@@ -44,12 +46,39 @@ class acessories():
                         dataAllSplit.append(dataSplit)
         return dataAllSplit
     
-    def createQrCode(self, numScale): 
-        qrcode = segno.make(self.alphaNum)
+    @st.cache_data(show_spinner=False)
+    def createQrCode(_self, numScale): 
+        qrcode = segno.make(_self.alphaNum)
         buf = io.BytesIO()
         qrcode.save(buf, kind="png", scale=numScale)
         byteIm = buf.getvalue()
         return byteIm
+    
+    @st.cache_data(show_spinner=False)
+    def definePlace(_self):
+        placeText = "Executando rotinas do app. Aguarde..." 
+        try:
+            yearStart, monthStart, yearEnd, monthEnd, valueUf, valueDf = [st.session_state[wordKeys[w]] for w in range(5, 11)]
+            keys = list(helpPlace.keys())
+            textPlace = ''
+            for d, data in enumerate([[yearStart, monthStart], [yearEnd, monthEnd]]):
+                if all(data): 
+                    allStart = helpPlace[keys[d]]
+                    symbStart = "🗓️"
+                    nameStart = allStart[1]
+                    dateStart = f"{data[0]} de {data[1]}"
+                    textPlace += f"{symbStart} {nameStart} {dateStart}<br>"
+            if valueUf:
+                placeText = f"🔍 Procurando lançamentos para {valueUf}<br>{textPlace}⌛ Aguarde, por favor!" 
+            if valueDf:
+                valueDfStr = '<br>'.join(valueDf)
+                placeText = f"🔍 Procurando lançamentos para {valueUf} e {valueDfStr}<br>{textPlace}⌛ Aguarde, por favor!"
+            else: 
+                if valueDf == []: 
+                    placeText = "Executando rotinas do app. Aguarde..."
+        except:
+            pass
+        return placeText
             
 class displayQuery():
     def __init__(self, title):
@@ -61,9 +90,9 @@ class displayQuery():
         else:
             self.placeholderBlock = colSet.empty()
         self.placeholderBlock.html(f"""
-                <div class="tela-bloqueio">
-                    <div class="custom-spinner"></div>
-                    <div class="texto-carregando">{self.title}...</div>
+                <div class="blockScreen">
+                    <div class="customSpinner"></div>
+                    <div class="textLoaded">{self.title}...</div>
                 </div>
         """)
         return self.placeholderBlock
@@ -607,7 +636,7 @@ class main():
         self.dirDbZsdtSt = r"C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_chunks_Github"
         self.dirDbZsdtGit = "./quotaAll"
         self.setPage()
-        self.definePlace()
+        self.placeText = acessories(None).definePlace()
         objDisplay = displayQuery(self.placeText)
         placeHolder = objDisplay.setHtmlPlace(None)
         self.isRunning()
@@ -620,13 +649,13 @@ class main():
     def setPage(self):
         st.html("""
             <style>
-                .tela-bloqueio {
+                .blockScreen {
                     position: fixed;
                     top: 0;
                     left: 0;
                     width: 100vw;
                     height: 100vh;
-                    background-color: rgba(0, 0, 0, 0.90); 
+                    background-color: rgba(0, 0, 0, 1); 
                     backdrop-filter: blur(10px);           
                     z-index: 99999;                        
                     display: flex;
@@ -634,7 +663,7 @@ class main():
                     justify-content: center;
                     align-items: center;
                 }
-                .custom-spinner {
+                .customSpinner {
                     width: 60px;
                     height: 60px;
                     border: 6px solid #f3f3f3;
@@ -642,7 +671,7 @@ class main():
                     border-radius: 50%;
                     animation: spin 1s linear infinite;
                 }
-                .texto-carregando {
+                .textLoaded {
                     color: white;
                     font-family: sans-serif;
                     font-size: 1.2rem;
@@ -663,28 +692,6 @@ class main():
             menu_items=None
         )
         
-    def definePlace(self):
-        self.placeText = "Executando rotinas do app. Aguarde..." 
-        try:
-            yearStart, monthStart, yearEnd, monthEnd, valueUf, valueDf = [st.session_state[wordKeys[w]] for w in range(5, 11)]
-            keys = list(helpPlace.keys())
-            textPlace = ''
-            for d, data in enumerate([[yearStart, monthStart], [yearEnd, monthEnd]]):
-                if all(data): 
-                    allStart = helpPlace[keys[d]]
-                    symbStart = "🗓️"
-                    nameStart = allStart[1]
-                    dateStart = f"{data[0]} de {data[1]}"
-                    textPlace += f"{symbStart} {nameStart} {dateStart}<br>"
-            if valueUf:
-                self.placeText = f"🔍 Procurando lançamentos para {valueUf}<br>{textPlace}⌛ Aguarde, por favor!" 
-            if valueDf:
-                valueDfStr = '<br>'.join(valueDf)
-                st.markdown(valueDfStr)
-                self.placeText = f"🔍 Procurando lançamentos para {valueUf} e {valueDfStr}<br>{textPlace}⌛ Aguarde, por favor!"
-        except Exception as error:
-            st.write(error)
-    
     def isRunning(self):
         if os.path.exists(self.dirDbZsdtSt):
             self.dirDbZsdt = self.dirDbZsdtSt
@@ -735,7 +742,6 @@ if __name__ == '__main__':
                  3:[":material/flag:", "estado", "Selecione uma unidade federativa por vez", 9, "sigla"], 
                  4:[":material/person_raised_hand:", "deputados federais", "Selecione um ou mais deputados federais por vez", 10, "nome"], 
                  5:[":material/no_accounts:", "deputados federais", "Não existem deputados federais para selecionar.", 10, "nome"]}
-    
     wordKeys = ['count', 'enableMonthStart', 'enableYearEnd', 'enableMonthEnd', 
                 'enableUfs', 'valYearStart', 'valMonthStart', 'valYearEnd', 'valMonthEnd', 
                 'valUf', 'valDf', 'countSearch', 'allFillters']
