@@ -21,21 +21,19 @@ class acessories():
     def __init__(self, num):
         self.alphaNum = num
     
-    @st.cache_data(show_spinner=False) 
-    def convertNumber(_self, mode):
+    def convertNumber(self, mode):
         if mode == 0:
-            if _self.alphaNum <= 999:
-                num = _self.alphaNum
+            if self.alphaNum <= 999:
+                num = self.alphaNum
             else:
-                num = format_currency(_self.alphaNum).replace('R$', '').split(',')[0]
+                num = format_currency(self.alphaNum).replace('R$', '').split(',')[0]
         else:
-            num = format_currency(_self.alphaNum).replace('R$', '')
+            num = format_currency(self.alphaNum).replace('R$', '')
         return num 
     
-    @st.cache_data(show_spinner=False)
-    def extractData(_self):
+    def extractData(self):
         dataAllSplit = []
-        nums = [str(num) for num in range(_self.alphaNum[0], _self.alphaNum[1]+1)]
+        nums = [str(num) for num in range(self.alphaNum[0], self.alphaNum[1]+1)]
         for data in dataSiteCd:
             dataSplit = data.split(seps[1])
             if len(dataSplit) == 1:
@@ -46,16 +44,14 @@ class acessories():
                         dataAllSplit.append(dataSplit)
         return dataAllSplit
     
-    @st.cache_data(show_spinner=False)
-    def createQrCode(_self, numScale): 
-        qrcode = segno.make(_self.alphaNum)
+    def createQrCode(self, numScale): 
+        qrcode = segno.make(self.alphaNum)
         buf = io.BytesIO()
         qrcode.save(buf, kind="png", scale=numScale)
         byteIm = buf.getvalue()
         return byteIm
-    
-    @st.cache_data(show_spinner=False)
-    def definePlace(_self):
+        
+    def definePlace(self):
         placeText = "Executando rotinas do app. Aguarde..." 
         try:
             yearStart, monthStart, yearEnd, monthEnd, valueUf, valueDf = [st.session_state[wordKeys[w]] for w in range(5, 11)]
@@ -69,13 +65,10 @@ class acessories():
                     dateStart = f"{data[0]} de {data[1]}"
                     textPlace += f"{symbStart} {nameStart} {dateStart}<br>"
             if valueUf:
-                placeText = f"🔍 Procurando lançamentos para {valueUf}<br>{textPlace}⌛ Aguarde, por favor!" 
+                placeText = f"🔍 Deputados federais para {valueUf}<br>{textPlace}⌛ Aguarde, por favor!" 
             if valueDf:
                 valueDfStr = '<br>'.join(valueDf)
-                placeText = f"🔍 Procurando lançamentos para {valueUf} e {valueDfStr}<br>{textPlace}⌛ Aguarde, por favor!"
-            else: 
-                if valueDf == []: 
-                    placeText = "Executando rotinas do app. Aguarde..."
+                placeText = f"🔍 Lançamentos/despesas para {valueUf} e {valueDfStr}<br>{textPlace}⌛ Aguarde, por favor!"
         except:
             pass
         return placeText
@@ -736,12 +729,13 @@ class main():
             
 if __name__ == '__main__':
     global wordKeys, seps
-    global helpPlace
+    global helpPlace, textPlaceAll
     helpPlace = {1:[":material/date_range:", "data inicial", "Selecione a data inicial (mês e ano).", 5, 6, "ano", "mês"], 
                  2:[":material/date_range:", "data final", "Selecione a data final (mês e ano).", 7, 8, "ano", "mês"], 
                  3:[":material/flag:", "estado", "Selecione uma unidade federativa por vez", 9, "sigla"], 
                  4:[":material/person_raised_hand:", "deputados federais", "Selecione um ou mais deputados federais por vez", 10, "nome"], 
                  5:[":material/no_accounts:", "deputados federais", "Não existem deputados federais para selecionar.", 10, "nome"]}
+    textPlaceAll = ["Executando rotinas do app. Aguarde..."]    
     wordKeys = ['count', 'enableMonthStart', 'enableYearEnd', 'enableMonthEnd', 
                 'enableUfs', 'valYearStart', 'valMonthStart', 'valYearEnd', 'valMonthEnd', 
                 'valUf', 'valDf', 'countSearch', 'allFillters']
