@@ -7,3 +7,4 @@ unidecode
 brutils
 httpx
 streamlit[pdf]
+locale
