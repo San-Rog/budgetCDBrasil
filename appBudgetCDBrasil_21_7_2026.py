@@ -3,7 +3,7 @@ import io
 import time
 import segno
 import httpx
-import locale
+#import locale
 import psutil
 import sqlite3
 import asyncio
@@ -15,7 +15,7 @@ from datetime import date
 from unidecode import unidecode
 from brutils.currency import format_currency
 from brutils.ibge.uf import convert_uf_to_name
-locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+#locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 class acessories():
     def __init__(self, num):
