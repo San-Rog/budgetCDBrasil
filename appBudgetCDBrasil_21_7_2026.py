@@ -52,26 +52,39 @@ class acessories():
         return byteIm
         
     def definePlace(self):
-        placeText = "Executando rotinas do app. Aguarde..." 
+        symbs = ["👩‍💼", "💵", "✋", "🚀"]
+        placeText = f"{symbs[-1]} Executando rotinas do app.<br>{symbs[2]} Aguarde, por favor!" 
         try:
-            yearStart, monthStart, yearEnd, monthEnd, valueUf, valueDf = [st.session_state[wordKeys[w]] for w in range(5, 11)]
-            keys = list(helpPlace.keys())
-            textPlace = ''
-            for d, data in enumerate([[yearStart, monthStart], [yearEnd, monthEnd]]):
-                if all(data): 
-                    allStart = helpPlace[keys[d]]
-                    symbStart = "🗓️"
-                    nameStart = allStart[1]
-                    dateStart = f"{data[0]} de {data[1]}"
-                    textPlace += f"{symbStart} {nameStart} {dateStart}<br>"
-            if valueUf:
-                placeText = f"🔍 Deputados federais para {valueUf}<br>{textPlace}⌛ Aguarde, por favor!" 
-            if valueDf:
-                valueDfStr = '<br>'.join(valueDf)
-                placeText = f"🔍 Lançamentos/despesas para {valueUf} e {valueDfStr}<br>{textPlace}⌛ Aguarde, por favor!"
-        except:
-            pass
+            self.formatTextPlace()
+            if self.valueUf:
+                placeText = f"{symbs[0]} Deputados federais para {self.valueUf}<br>{self.textPlace}{symbs[2]} Aguarde, por favor!" 
+            if self.valueDf:
+                nDf = len(self.valueDf)
+                textDf = f"{symbs[0]} Deputado(a) federal" if nDf == 1 else f"{symbs[0]} {nDf} Deputados(as) federais:" 
+                valueDfStr = "<ul>"
+                if len(self.valueDf) > 1:
+                    for value in self.valueDf:
+                        valueDfStr += f"<li>{value}</li>"
+                    valueDfStr += "</ul>"
+                else:
+                    valueDfStr = self.valueDf[0] + "<br>"
+                placeText = f"{symbs[1]} Despesas para {self.valueUf}<br>"
+                placeText += f"{textDf} {valueDfStr} {self.textPlace}{symbs[2]} Aguarde, por favor!"
+        except Exception as error:
+            st.write(error)
         return placeText
+    
+    def formatTextPlace(self):
+        self.yearStart, self.monthStart, self.yearEnd, self.monthEnd, self.valueUf, self.valueDf = [st.session_state[wordKeys[w]] for w in range(5, 11)]
+        keys = list(helpPlace.keys())
+        self.textPlace = ''
+        for d, data in enumerate([[self.yearStart, self.monthStart], [self.yearEnd, self.monthEnd]]):
+            if all(data): 
+                allStart = helpPlace[keys[d]]
+                symbStart = "🗓️"
+                nameStart = allStart[1]
+                dateStart = f"{data[0]} de {data[1]}"
+                self.textPlace += f"{symbStart} {dateStart} ({nameStart})<br>"
             
 class displayQuery():
     def __init__(self, title):
@@ -150,17 +163,18 @@ class displayQuery():
         for s, selDf in enumerate(self.allSelDf):
             cotas = [result for result in self.results if result[15] == selDf]
             newCotas = []
+            nCotas = len(cotas)
             urlDocs = []
             for c, cota in enumerate(cotas):
                 newCota = list(cota)
-                newCota[0] = acessories(c+1).convertNumber(0)
+                newCota[0] = f"{acessories(c+1).convertNumber(0)}/{nCotas}"
                 newCotas.append(newCota)
                 cont += 1
             self.cols[0] = "#"
             urlDocs.append(newCotas)
             allLiq = [cota[-1] for cota in newCotas]
             df = pd.DataFrame(newCotas, columns=self.cols)
-            nLanc = len(df)
+            nLanc = nCotas
             dictNewLine = {self.cols[w]:[''] for w in range(len(self.cols))} 
             dictNewLine[self.cols[0]] = ['soma']  
             sumLiq = []
@@ -169,11 +183,10 @@ class displayQuery():
                 try:
                     df[self.cols[w]] = df[self.cols[w]].astype(float)
                     df[self.cols[w]] = df[self.cols[w]].round(2)
-                    totalSum = df[self.cols[w]].sum()
                 except:
-                    df[self.cols[w]] = df[self.cols[w]].fillna(0).astype(str)
+                    df[self.cols[w]] = df[self.cols[w]].fillna(0)
                     df[self.cols[w]] = df[self.cols[w]].round(2)
-                    totalSum = df[self.cols[w]].sum()
+                totalSum = df[self.cols[w]].sum()
                 try:
                     if int(totalSum) == 0:
                         totalSum = 0
@@ -184,15 +197,17 @@ class displayQuery():
                     sumLiq.append(totalSum)
             newLine = pd.DataFrame(dictNewLine)
             df = pd.concat([df, newLine], ignore_index=True)
-            exprLanc = f"{nLanc} lançamento" if nLanc <= 1 else f"{acessories(nLanc).convertNumber(0)} lançamentos"
-            exprDf = f"deputado(a) federal {selDf} ({s+1})"
+            exprLanc = f":material/topic: :blue[**{nLanc}**] **lançamento**" if nLanc <= 1 else f":blue[**{acessories(nLanc).convertNumber(0)}**] **lançamentos**"
+            exprDf = f":material/person_apron: **deputado(a) federal** :blue[**{selDf}**]"
+            exprLiq = f"**despesa líquida geral de** :blue[**R$ {acessories(sumLiq[0]).convertNumber(1)}**]"
             with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
                                         vertical_alignment="center", key=cont): 
                 with st.container(border=False):
-                    colDf, colAunch, colSum = st.columns([18, 5, 5], border=True)
-                    colDf.markdown(exprDf)
+                    (colDfAll, ) = st.columns(1, border=False) 
+                    colDfAll.markdown(exprDf)
+                    colAunch, colSum = st.columns(2, border=False, width="stretch")
                     colAunch.markdown(exprLanc) 
-                    colSum.markdown(sumLiq[0])
+                    colSum.markdown(exprLiq)
                 st.dataframe(data=df, width="stretch", hide_index=True)
                 if self.nSelDf > 1:
                     st.divider(width="stretch")
@@ -200,28 +215,33 @@ class displayQuery():
                 for url in urlDocs:
                     for u, ur in enumerate(url):
                         cont += u
-                        colDf, colDetail = st.columns([5, 18], border=True)
-                        colDf.markdown(f"lançamento {u+1}/{nLanc+1}")
-                        colDetail.markdown(exprDf)
+                        (colDf, ) = st.columns(1, border=False)
+                        colDf.markdown(exprDf)
+                        colDetail, colLiq = st.columns(2, border=False)
+                        exprLancUr = f":material/tag: **lançamento** :blue[**{self.cols[0]} {u+1}/{nLanc}**]"
+                        exprLiqUr = f"**despesa líquida parcial de** :blue[**R$ {acessories(newCotas[u][-1]).convertNumber(1)}**]"
+                        colDetail.markdown(exprLancUr)
+                        colLiq.markdown(exprLiqUr)
                         url = ur[29]
                         st.dataframe(data=df.iloc[[u]], width="stretch", hide_index=True)
-                        (colInk,) = st.columns(1, border=True)
                         if url.strip() == '':
-                            colInk.markdown(f":material/ad_off: documento de despesa não cadastrado.")
+                            st.markdown(f":material/ad_off: **documento de despesa ou link não cadastrado.**")
                         else:
-                            colInk.markdown(f":material/link: link para download: {url}")
+                            st.markdown(f":material/link: **link para download** :blue[**{url}**]")
                             (colDoc, ) = st.columns(1, border=True)
                             try:
                                 pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
                                 if pdfBytes.startswith(b'%PDF-'):
-                                    colDoc.markdown(f":material/document_scanner: documento baixado") 
+                                    colDoc.markdown(f":material/document_scanner: :blue[**documento baixado**]") 
                                 else:
-                                    colDoc.markdown(f":material/skull: documento não baixável de forma direta (captcha ou similiar)")
+                                    colDoc.markdown(f":material/skull: **documento não baixável de forma direta (captcha ou similiar)**")
                                 st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{cont}")
                             except Exception as e:
                                 st.markdown(f":material/document_scanner: não gerado")
                                 st.markdown(f"Erro ao processar: {e}")
-        
+                        st.space(size="small")
+            self.colData.space(size="small")
+            
     @st.dialog(title='Colunas', width="medium", icon=":material/analytics:", on_dismiss="ignore")
     def filterDf(self, cols):
         colsMark = [w for w in range(len(cols))]
@@ -426,7 +446,9 @@ class windowStream():
     def checkButton(self, value):
         match value:
             case 0 | 1:
-                objDisplay = displayQuery('Buscando dados para os filtros...')
+                placeText = acessories(None).definePlace()
+                placeText = f'⛏️ Garimpando dados e documentos conforme os seguintes filtros:<br>{placeText}'
+                objDisplay = displayQuery(placeText)
                 placeHolder = objDisplay.setHtmlPlace(self.colData)
                 title = f":material/data_table: Origem dos dados oficiais"
                 objDisplay = displayQuery(title)
