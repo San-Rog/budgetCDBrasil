@@ -1,3 +1,2 @@
 locales
 locales-all
-pyttsx3
