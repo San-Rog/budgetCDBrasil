@@ -60,26 +60,8 @@ class acessories():
         return byteIm
         
     def definePlace(self):
-        symbs = ["👩‍💼", "💵", "✋", "🚀"]
-        placeText = f"{symbs[-1]} Executando rotinas do app.<br>{symbs[2]} Aguarde, por favor!" 
-        try:
-            self.formatTextPlace()
-            if self.valueUf:
-                placeText = f"{symbs[0]} Deputados federais para {self.valueUf}<br>{self.textPlace}{symbs[2]} Aguarde, por favor!" 
-            if self.valueDf:
-                nDf = len(self.valueDf)
-                textDf = f"{symbs[0]} Deputado(a) federal" if nDf == 1 else f"{symbs[0]} {nDf} Deputados(as) federais:" 
-                valueDfStr = "<ul>"
-                if len(self.valueDf) > 1:
-                    for value in self.valueDf:
-                        valueDfStr += f"<li>{value}</li>"
-                    valueDfStr += "</ul>"
-                else:
-                    valueDfStr = self.valueDf[0] + "<br>"
-                placeText = f"{symbs[1]} Despesas para {self.valueUf}<br>"
-                placeText += f"{textDf} {valueDfStr} {self.textPlace}{symbs[2]} Aguarde, por favor!"
-        except:
-            pass
+        symbs = ["🚀", "✋"]
+        placeText = f"{symbs[0]} Executando rotinas do app.<br>{symbs[1]} Aguarde, por favor!" 
         return placeText
     
     def formatTextPlace(self):
@@ -486,7 +468,6 @@ class windowStream():
         match value:
             case 0 | 1:
                 placeText = acessories(None).definePlace()
-                placeText = f'⛏️ Garimpando dados e documentos conforme os seguintes filtros:<br>{placeText}'
                 objDisplay = displayQuery(placeText)
                 placeHolder = objDisplay.setHtmlPlace(self.colData)
                 title = f":material/data_table: acesso ao site oficial"
