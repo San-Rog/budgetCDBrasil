@@ -7,13 +7,16 @@ import locale
 import psutil
 import sqlite3
 import asyncio
+import pyttsx3
 import calendar
 import pandas as pd
 import streamlit as st
 import zstandard as zstd
 from datetime import date
+from decimal import Decimal
 from unidecode import unidecode
 from brutils.currency import format_currency
+from brutils import convert_real_to_text
 from brutils.ibge.uf import convert_uf_to_name
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
@@ -30,6 +33,11 @@ class acessories():
         else:
             num = format_currency(self.alphaNum).replace('R$', '')
         return num 
+        
+    def convertNumExt(self):
+        value = Decimal(self.alphaNum)
+        extensive = convert_real_to_text(value)
+        return extensive
     
     def extractData(self):
         dataAllSplit = []
@@ -70,8 +78,8 @@ class acessories():
                     valueDfStr = self.valueDf[0] + "<br>"
                 placeText = f"{symbs[1]} Despesas para {self.valueUf}<br>"
                 placeText += f"{textDf} {valueDfStr} {self.textPlace}{symbs[2]} Aguarde, por favor!"
-        except Exception as error:
-            st.write(error)
+        except:
+            pass
         return placeText
     
     def formatTextPlace(self):
@@ -107,6 +115,9 @@ class displayQuery():
         nSelDf = len(allSelDf)
         numStr = f"{nSelDf} deputado federal" if nSelDf <= 1 else f"{nSelDf} deputados federais" 
         self.nSelDf = nSelDf
+        self.colThree = [7, 2, 4]
+        self.colThreeTwo = [14, 2, 5]
+        self.colTwo = [4, 10]
         self.allSelDf, self.colData, self.start, self.end = (allSelDf, colData, start, end)
         self.cols, self.results = (cols, results)
         self.arrow = ":material/arrow_range:"        
@@ -122,33 +133,47 @@ class displayQuery():
     def screenExpander(self):
         dataAllSplit = acessories([self.start, self.end]).extractData()
         with self.colData.expander(label="Detalhes da pesquisa", expanded=False, icon=":material/person_search:", 
-                              width="stretch"):
-            st.markdown(self.title, text_alignment="left", width="stretch")
-            colOrig, colQrOrig = st.columns([10, 2.5], vertical_alignment="top", width="stretch", border=True)
+                                   width="stretch"):
+            self.dataLines = dataAllSplit[1:]
+            df = pd.DataFrame(self.dataLines)
+            self.newCols = ['link para download', 'nome do arquivo', 'criação (dia e horário)', 'modificação (dia e horário)', 'tamanho']
+            self.dictCols()
+            df.columns = self.newCols
+            nDf = len(df)
+            if nDf == 1:
+                exprDetail = "Arquivo-download utilizado e acesso ao site oficial"
+            else:
+                exprDetail = f"Informações sobre os {nDf} arquivos-download utilizados"
+            st.markdown(f":material/folder_info: {exprDetail}", width="stretch")
+            st.dataframe(data=df, 
+                         column_config={
+                                self.newCols[0]: st.column_config.LinkColumn(
+                                    self.newCols[0],
+                                    help="Clique para fazer download do arquivo."
+                                )
+                            }, hide_index=True) 
+            st.space(size="small")
+            colOrig, colQrOrig, colAudOrig = st.columns(self.colThree, vertical_alignment="center", width="stretch", border=False)
             linkOrig = '.'.join(dataAllSplit[0])
             colOrig.markdown(f":material/link: {linkOrig}", unsafe_allow_html=True, 
                              width="stretch", text_alignment="left")
             byteImg = acessories(linkOrig).createQrCode(2)
             colQrOrig.image(byteImg, width="content", link=linkOrig)
-            dataLines = dataAllSplit[1:]
-            df = pd.DataFrame(dataLines)
-            newCols = ['link para download', 'nome do arquivo', 'criação (dia e horário)', 'modificação (dia e horário)', 'tamanho']
-            df.columns = newCols
-            nDf = len(df)
-            if nDf == 1:
-                exprDetail = "Informações sobre o único arquivo-download utilizado"
-                #helpDetail = "Link, nome, dia e horário de criação/modificação da base de dados existente no site oficial e/ou dali extraível"  
-            else:
-                exprDetail = f"Informações sobre os {nDf} arquivos-download utilizados"
-                #helpDetail = "Link, nome, dia e horário de criação/modificação das bases de dados existentes no site oficial e/ou dali extraíveis"  
-            st.markdown(f":material/folder_info: {exprDetail}", width="stretch")
-            st.dataframe(data=df, 
-                         column_config={
-                                newCols[0]: st.column_config.LinkColumn(
-                                    newCols[0],
-                                    help="Clique para fazer download do arquivo."
-                                )
-                            }, hide_index=True) 
+            #textAud = f"{self.textAud}, para acessar o site oficial, clique em {linkOrig} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
+            textAud = f"Para acessar o site oficial, dê um clique no link {linkOrig} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
+            audData = self.createAudVoice(textAud) 
+            colAudOrig.audio(audData.getvalue(), format="audio/wav", width="stretch")
+    
+    def dictCols(self):
+        self.dictTextAud = {}
+        for n, newCol in enumerate(self.newCols): 
+            self.dictTextAud.setdefault(newCol, [])
+            for dataLine in self.dataLines:
+                self.dictTextAud[newCol].append(dataLine[n])
+        self.textAud = ''
+        for dctText, aud in self.dictTextAud.items(): 
+            audJoin = ' '.join(aud)
+            self.textAud += f"{dctText} = {audJoin}"
     
     def screenLaunch(self):
         self.allDfs = []
@@ -191,55 +216,73 @@ class displayQuery():
                     sumLiq.append(totalSum)
             newLine = pd.DataFrame(dictNewLine)
             df = pd.concat([df, newLine], ignore_index=True)
-            exprLanc = f":material/topic: :blue[**{nLanc}**] _lançamento_" if nLanc <= 1 else f":material/topic: :blue[**{acessories(nLanc).convertNumber(0)}**] _lançamentos_"
-            exprDf = f":material/person_apron: _deputado(a) federal_ :blue[**{selDf}**]"
-            exprLiq = f":material/money_bag: _despesa líquida geral de_ :blue[**R$ {acessories(sumLiq[0]).convertNumber(1)}**]"
+            exprLanc = f":material/topic: :red[**{nLanc}**] _lançamento_" if nLanc <= 1 else f":material/topic: :red[**{acessories(nLanc).convertNumber(0)}**] _lançamentos_"
+            exprDf = f":material/person_apron: _deputado(a) federal_ :red[**{selDf}**]"
+            valReal = sumLiq[0]
+            exprLiq = f":material/money_bag: _despesa líquida geral de_ :red[**R$ {acessories(valReal).convertNumber(1)}**]"
+            exprLiq += f" (:blue[{(acessories(valReal).convertNumExt()).lower()}])"
             with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
                                         vertical_alignment="center", key=cont): 
-                with st.container(border=False):
+                with st.container(border=True):
                     (colDfAll, ) = st.columns(1, border=False) 
                     colDfAll.markdown(exprDf)
-                    colAunch, colSum = st.columns(2, border=False, width="stretch")
+                    colAunch, colSum = st.columns(self.colTwo, border=False, width="stretch")
                     colAunch.markdown(exprLanc) 
                     colSum.markdown(exprLiq)
-                st.dataframe(data=df, width="stretch", hide_index=True)
-                if self.nSelDf > 1:
-                    st.divider(width="stretch")
-                    self.allDfs.append(df)
+                    st.dataframe(data=df, width="stretch", hide_index=True)
+                    if self.nSelDf > 1:
+                        self.allDfs.append(df)
                 for url in urlDocs:
-                    st.divider()
                     for u, ur in enumerate(url):
-                        cont += u
-                        (colDf, ) = st.columns(1, border=False)
-                        colDf.markdown(exprDf)
-                        colDetail, colLiq = st.columns(2, border=False)
-                        exprLancUr = f":material/tag: _lançamento_ :blue[**{u+1}/{nLanc}**]"
-                        exprLiqUr = f":material/money_bag: _despesa líquida parcial de_ :blue[**R$ {acessories(newCotas[u][-1]).convertNumber(1)}**]"
-                        colDetail.markdown(exprLancUr)
-                        colLiq.markdown(exprLiqUr)
-                        url = ur[29]
-                        st.dataframe(data=df.iloc[[u]], width="stretch", hide_index=True)
-                        if url.strip() == '':
-                            st.markdown(f":material/ad_off: _comprovante de despesa ou link não cadastrado._")
-                        else:
-                            st.markdown(f":material/download: _download do comprovante de despesa_", text_alignment="left", width="stretch")
-                            colDown, colQrUrl = st.columns([10, 2.5], vertical_alignment="top", width="stretch", border=False)
-                            colDown.markdown(f":material/download_2: :blue[**{url}**]")
-                            byteImg = acessories(url).createQrCode(2)
-                            colQrUrl.image(byteImg, width="content", link=url)
-                            try:
-                                pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
-                                if pdfBytes.startswith(b'%PDF-'):
-                                    st.markdown(f":material/document_scanner: _documento baixado_") 
-                                else:
-                                    st.markdown(f":material/skull: _documento não baixável de forma direta (captcha ou similiar)_")
-                                st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{cont}")
-                            except Exception as e:
-                                st.markdown(f":material/document_scanner: _download não gerado_")
-                                st.markdown(f":material/globe_2_cancel: :red[_{e}_]")
-                        st.space(size="small")
+                        with st.container(border=True):
+                            cont += u
+                            (colDf, ) = st.columns(1, border=False)
+                            colDf.markdown(exprDf)
+                            colDetail, colLiq = st.columns(self.colTwo, border=False)
+                            exprLancUr = f":material/tag: _lançamento_ :red[**{u+1}/{nLanc}**]"
+                            valReal = newCotas[u][-1]
+                            exprLiqUr = f":material/money_bag: _despesa líquida parcial de_ :red[**R$ {acessories(valReal).convertNumber(1)}**]"
+                            exprLiqUr += f" (:blue[{(acessories(valReal).convertNumExt()).lower()}])"
+                            colDetail.markdown(exprLancUr)
+                            colLiq.markdown(exprLiqUr)
+                            url = ur[29]
+                            st.dataframe(data=df.iloc[[u]], width="stretch", hide_index=True)
+                            if url.strip() == '':
+                                st.markdown(f":material/ad_off: _comprovante de despesa ou link não cadastrado._")
+                            else:
+                                colDown, colQrUrl, colAudUrl = st.columns(self.colThreeTwo, vertical_alignment="center", width="stretch", border=False)
+                                colDown.markdown(f":material/download_2: :red[**{url}**]")
+                                byteImg = acessories(url).createQrCode(2)
+                                colQrUrl.image(byteImg, width="content", link=url)
+                                textAud = f"Para tentar fazer download, dê um clique no link {url} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
+                                audData = self.createAudVoice(textAud) 
+                                colAudUrl.audio(audData.getvalue(), format="audio/wav", width="stretch")
+                                try:
+                                    pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
+                                    if pdfBytes.startswith(b'%PDF-'):
+                                        st.markdown(f":material/document_scanner: _documento baixado_") 
+                                    else:
+                                        st.markdown(f":material/skull: _documento não baixável de forma direta (captcha ou similiar)_")
+                                    st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{cont}")
+                                except Exception as e:
+                                    st.markdown(f":material/document_scanner: _download não gerado_")
+                                    st.markdown(f":material/globe_2_cancel: :blue[_{e}_]")
             self.colData.space(size="small")
-            
+    
+    @st.cache_data(show_spinner=False, ttl=30, max_entries=2)
+    def createAudVoice(_self, textAud: str) -> bytes:
+        nameTemp = "tempAud.wav"
+        engine = pyttsx3.init()
+        try:
+            engine.save_to_file(textAud, nameTemp)
+            engine.runAndWait()  
+            with open(nameTemp, "rb") as f:
+                audBytes = io.BytesIO(f.read())
+        finally:
+            if os.path.exists(nameTemp):
+                os.remove(nameTemp)
+        return audBytes
+    
     @st.dialog(title='Colunas', width="medium", icon=":material/analytics:", on_dismiss="ignore")
     def filterDf(self, cols):
         colsMark = [w for w in range(len(cols))]
@@ -448,7 +491,7 @@ class windowStream():
                 placeText = f'⛏️ Garimpando dados e documentos conforme os seguintes filtros:<br>{placeText}'
                 objDisplay = displayQuery(placeText)
                 placeHolder = objDisplay.setHtmlPlace(self.colData)
-                title = f":material/data_table: Acesso à origem dos dados oficiais"
+                title = f":material/data_table: acesso ao site oficial"
                 objDisplay = displayQuery(title)
                 objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
                                    self.yearStart, self.yearEnd, value)
@@ -539,7 +582,7 @@ class windowStream():
             exprMark = args[2]
             condTest = st.session_state[wordKeys[numOne]]
         if condTest:
-            strStart = f":blue[{symbol} **{exprMark}** :material/check:]"
+            strStart = f":red[{symbol} **{exprMark}** :material/check:]"
         else:
             strStart = f":gray[{symbol} {exprMark} :material/close:]"
         return strStart        
@@ -728,7 +771,7 @@ class main():
         if st.session_state[wordKeys[0]] == 1:
             verifyZsdt = objOperat.mergeFilesZsdt(self.dirDbZsdt, self.fileDbZsdt)
             if not verifyZsdt:
-                mensTxt = "Não ex base de dados (:material/database:) para leitura! Por favor, execute a rotina de scraping (:material/search_insights:)!"
+                mensTxt = "Não existe base de dados (:material/database:) para leitura! Por favor, execute a rotina de scraping (:material/search_insights:)!"
                 objDisplay.mensAppFail(mensTxt)
         else:
             verifyZsdt = True        
