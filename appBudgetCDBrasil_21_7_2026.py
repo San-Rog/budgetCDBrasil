@@ -7,9 +7,9 @@ import locale
 import psutil
 import sqlite3
 import asyncio
-import pyttsx3
 import calendar
 import pandas as pd
+from gtts import gTTS
 import streamlit as st
 import zstandard as zstd
 from datetime import date
@@ -272,12 +272,10 @@ class displayQuery():
     @st.cache_data(show_spinner=False, ttl=30, max_entries=2)
     def createAudVoice(_self, textAud: str) -> bytes:
         nameTemp = "tempAud.wav"
-        engine = pyttsx3.init()
         try:
-            engine.save_to_file(textAud, nameTemp)
-            engine.runAndWait()  
-            with open(nameTemp, "rb") as f:
-                audBytes = io.BytesIO(f.read())
+            tts = gTTS(text=textAud, lang="pt")
+            audBytes = io.BytesIO()
+            tts.write_to_fp(audBytes)
         finally:
             if os.path.exists(nameTemp):
                 os.remove(nameTemp)
