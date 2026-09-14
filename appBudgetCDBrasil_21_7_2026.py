@@ -98,7 +98,7 @@ class displayQuery():
         numStr = f"{nSelDf} deputado federal" if nSelDf <= 1 else f"{nSelDf} deputados federais" 
         self.nSelDf = nSelDf
         self.colThree = [7, 2, 4]
-        self.colThreeTwo = [14, 2, 5]
+        self.colThreeTwo = [14, 3, 5]
         self.colTwo = [4, 10]
         self.allSelDf, self.colData, self.start, self.end = (allSelDf, colData, start, end)
         self.cols, self.results = (cols, results)
@@ -230,14 +230,14 @@ class displayQuery():
                             url = ur[29]
                             st.dataframe(data=df.iloc[[u]], width="stretch", hide_index=True)
                             if url.strip() == '':
-                                st.markdown(f":material/ad_off: _comprovante de despesa ou link não cadastrado._")
+                                st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
                             else:
                                 try:
                                     pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
                                     if pdfBytes.startswith(b'%PDF-'):
                                         st.markdown(f":material/document_scanner: _documento baixado_") 
                                     else:
-                                        st.markdown(f":material/skull: _documento não baixável de forma direta (captcha ou similiar)_")
+                                        st.markdown(f":material/skull: _documento não baixável de forma direta em virtude de captcha ou múltiplas abas dependentes de comandos do usuário (:blue[recomenda-se usar as opções abaixo]:)_")
                                     st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{cont}")
                                 except Exception as e:
                                     st.markdown(f":material/document_scanner: _download não gerado_")
