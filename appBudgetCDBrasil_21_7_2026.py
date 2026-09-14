@@ -15,7 +15,6 @@ import zstandard as zstd
 from datetime import date
 from decimal import Decimal
 from unidecode import unidecode
-from requests.exceptions import HTTPError
 from brutils.currency import format_currency
 from brutils import convert_real_to_text
 from brutils.ibge.uf import convert_uf_to_name
@@ -240,12 +239,9 @@ class displayQuery():
                                     else:
                                         st.markdown(f":material/skull: _documento não baixável de forma direta em virtude de captcha ou abas dependentes de comandos do usuário (:blue[recomenda-se usar as opções _link_ ou _qrcode_])_")
                                     st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{cont}")
-                                except HTTPError as http_err:
+                                except Exception as e:
                                     st.markdown(f":material/document_scanner: _download não gerado_")
-                                    st.markdown(f":material/globe_2_cancel: :blue[_{http_err}_]")
-                                except Exception as err:
-                                    st.markdown(f":material/document_scanner: _download não gerado_")
-                                    st.markdown(f":material/globe_2_cancel: :blue[_{err}_]")
+                                    st.markdown(f":material/globe_2_cancel: :blue[_{e}_]")
                                 colDown, colQrUrl, colAudUrl = st.columns(self.colThreeTwo, vertical_alignment="center", width="stretch", border=False)
                                 colDown.markdown(f":material/download_2: :red[**{url}**]")
                                 byteImg = acessories(url).createQrCode(2)
