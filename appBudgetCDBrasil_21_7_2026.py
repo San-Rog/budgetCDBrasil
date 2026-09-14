@@ -232,13 +232,6 @@ class displayQuery():
                             if url.strip() == '':
                                 st.markdown(f":material/ad_off: _comprovante de despesa ou link não cadastrado._")
                             else:
-                                colDown, colQrUrl, colAudUrl = st.columns(self.colThreeTwo, vertical_alignment="center", width="stretch", border=False)
-                                colDown.markdown(f":material/download_2: :red[**{url}**]")
-                                byteImg = acessories(url).createQrCode(2)
-                                colQrUrl.image(byteImg, width="content", link=url)
-                                textAud = f"Para tentar fazer download, dê um clique no link {url} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
-                                audData = self.createAudVoice(textAud) 
-                                colAudUrl.audio(audData.getvalue(), format="audio/wav", width="stretch")
                                 try:
                                     pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
                                     if pdfBytes.startswith(b'%PDF-'):
@@ -249,6 +242,13 @@ class displayQuery():
                                 except Exception as e:
                                     st.markdown(f":material/document_scanner: _download não gerado_")
                                     st.markdown(f":material/globe_2_cancel: :blue[_{e}_]")
+                                colDown, colQrUrl, colAudUrl = st.columns(self.colThreeTwo, vertical_alignment="center", width="stretch", border=False)
+                                colDown.markdown(f":material/download_2: :red[**{url}**]")
+                                byteImg = acessories(url).createQrCode(2)
+                                colQrUrl.image(byteImg, width="content", link=url)
+                                textAud = f"Para tentar fazer download, dê um clique no link {url} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
+                                audData = self.createAudVoice(textAud) 
+                                colAudUrl.audio(audData.getvalue(), format="audio/wav", width="stretch")
             self.colData.space(size="small")
     
     @st.cache_data(show_spinner=False, ttl=30, max_entries=2)
