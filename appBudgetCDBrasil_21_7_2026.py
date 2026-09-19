@@ -105,12 +105,6 @@ class displayQuery():
         self.arrow = ":material/arrow_range:"        
         self.screenExpander()      
         self.screenLaunch()
-        #if self.allDfs != []:
-        #    dfAll = pd.concat(self.allDfs, ignore_index=True)
-        #    nDfAll = len(dfAll)
-        #    exprLanc = f"{nDfAll} lançamento" if nDfAll <= 1 else f"{acessories(nDfAll).convertNumber(0)} lançamentos"
-        #    st.markdown(f":material/group: todos os deputados federais {self.arrow} {exprLanc}")
-        #    st.dataframe(data=dfAll, width="stretch", hide_index=True)
     
     def screenExpander(self):
         dataAllSplit = acessories([self.start, self.end]).extractData()
@@ -141,7 +135,6 @@ class displayQuery():
                              width="stretch", text_alignment="left")
             byteImg = acessories(linkOrig).createQrCode(2)
             colQrOrig.image(byteImg, width="content", link=linkOrig)
-            #textAud = f"{self.textAud}, para acessar o site oficial, clique em {linkOrig} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
             textAud = f"Para acessar o site oficial, dê um clique no link {linkOrig} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
             audData = self.createAudVoice(textAud) 
             colAudOrig.audio(audData.getvalue(), format="audio/wav", width="stretch")
@@ -159,97 +152,116 @@ class displayQuery():
     
     def screenLaunch(self):
         self.allDfs = []
-        cont = 0
+        self.cont = 0
         nAllSelDf = len(self.allSelDf)
-        for s, selDf in enumerate(self.allSelDf):
-            cotas = [result for result in self.results if result[15] == selDf]
-            newCotas = []
-            nCotas = len(cotas)
-            urlDocs = []
-            for c, cota in enumerate(cotas):
-                newCota = list(cota)
-                newCota[0] = f"{acessories(c+1).convertNumber(0)}/{nCotas}"
-                newCotas.append(newCota)
-                cont += 1
-            self.cols[0] = "#"
-            urlDocs.append(newCotas)
-            allLiq = [cota[-1] for cota in newCotas]
-            df = pd.DataFrame(newCotas, columns=self.cols)
-            nLanc = nCotas
-            dictNewLine = {self.cols[w]:[''] for w in range(len(self.cols))} 
-            dictNewLine[self.cols[0]] = ['soma']  
-            sumLiq = []
-            seqNums = [23, 24, 30, 31, 32]
-            for w in seqNums:
-                try:
-                    df[self.cols[w]] = df[self.cols[w]].astype(float)
-                    df[self.cols[w]] = df[self.cols[w]].round(2)
-                except:
-                    df[self.cols[w]] = df[self.cols[w]].fillna(0)
-                    df[self.cols[w]] = df[self.cols[w]].round(2)
-                totalSum = df[self.cols[w]].sum()
-                try:
-                    if int(totalSum) == 0:
-                        totalSum = 0
-                except:
-                    pass
-                dictNewLine[self.cols[w]] = [totalSum]
-                if w == seqNums[-1]:
-                    sumLiq.append(totalSum)
-            newLine = pd.DataFrame(dictNewLine)
-            df = pd.concat([df, newLine], ignore_index=True)
-            exprLanc = f":material/topic: :red[**{nLanc}**] _lançamento_" if nLanc <= 1 else f":material/topic: :red[**{acessories(nLanc).convertNumber(0)}**] _lançamentos_"
-            exprDf = f":material/person_apron: _deputado(a) federal_ :red[**{selDf}**]"
-            valReal = sumLiq[0]
-            exprLiq = f":material/money_bag: _despesa líquida geral de_ :red[**R$ {acessories(valReal).convertNumber(1)}**]"
-            exprLiq += f" (:blue[{(acessories(valReal).convertNumExt()).lower()}])"
+        self.allSummary = {}
+        for self.s, self.selDf in enumerate(self.allSelDf):
+            self.calcSumAll()
+            self.summaryFull()
             with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
-                                        vertical_alignment="center", key=cont): 
+                                        vertical_alignment="center", key=self.cont): 
                 with st.container(border=True):
                     (colDfAll, ) = st.columns(1, border=False) 
-                    colDfAll.markdown(exprDf)
+                    colDfAll.markdown(self.exprDf)
                     colAunch, colSum = st.columns(self.colTwo, border=False, width="stretch")
-                    colAunch.markdown(exprLanc) 
-                    colSum.markdown(exprLiq)
-                    st.dataframe(data=df, width="stretch", hide_index=True)
+                    colAunch.markdown(self.exprLanc) 
+                    colSum.markdown(self.exprLiq)
+                    st.dataframe(data=self.df, width="stretch", hide_index=True)
                     if self.nSelDf > 1:
-                        self.allDfs.append(df)
-                for url in urlDocs:
+                        self.allDfs.append(self.df)
+                for url in self.urlDocs:
                     for u, ur in enumerate(url):
                         with st.container(border=True):
-                            cont += u
+                            self.cont += u
                             (colDf, ) = st.columns(1, border=False)
-                            colDf.markdown(exprDf)
+                            colDf.markdown(self.exprDf)
                             colDetail, colLiq = st.columns(self.colTwo, border=False)
-                            exprLancUr = f":material/tag: _lançamento_ :red[**{u+1}/{nLanc}**]"
-                            valReal = newCotas[u][-1]
+                            exprLancUr = f":material/tag: _lançamento_ :red[**{u+1}/{self.nLanc}**]"
+                            valReal = self.newCotas[u][-1]
                             exprLiqUr = f":material/money_bag: _despesa líquida parcial de_ :red[**R$ {acessories(valReal).convertNumber(1)}**]"
                             exprLiqUr += f" (:blue[{(acessories(valReal).convertNumExt()).lower()}])"
                             colDetail.markdown(exprLancUr)
                             colLiq.markdown(exprLiqUr)
                             url = ur[29]
-                            st.dataframe(data=df.iloc[[u]], width="stretch", hide_index=True)
+                            st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
                             if url.strip() == '':
                                 st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
                             else:
+                                addRec = "(:red[recomenda-se verificação usando as opções _link_ ou _qrcode_ abaixo])"
                                 try:
                                     pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
                                     if pdfBytes.startswith(b'%PDF-'):
                                         st.markdown(f":material/document_scanner: _documento baixado_") 
                                     else:
-                                        st.markdown(f":material/skull: _documento não baixável de forma direta em virtude de captcha ou abas dependentes de comandos do usuário (:blue[recomenda-se usar as opções _link_ ou _qrcode_])_")
+                                        st.markdown(f":material/skull: _documento não baixável de forma direta em virtude de captcha ou abas dependentes de comandos do usuário {addRec}")
                                     st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{cont}")
                                 except Exception as e:
+                                    eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
                                     st.markdown(f":material/document_scanner: _download não gerado_")
-                                    st.markdown(f":material/globe_2_cancel: :blue[_{e}_]")
+                                    st.markdown(f":material/globe_2_cancel: {eAdd}", width="stretch")
                                 colDown, colQrUrl, colAudUrl = st.columns(self.colThreeTwo, vertical_alignment="center", width="stretch", border=False)
-                                colDown.markdown(f":material/download_2: :red[**{url}**]")
+                                colDown.markdown(f":material/download_2: :red[**{url}**]", width="stretch")
                                 byteImg = acessories(url).createQrCode(2)
                                 colQrUrl.image(byteImg, width="content", link=url)
                                 textAud = f"Para tentar fazer download, dê um clique no link {url} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
                                 audData = self.createAudVoice(textAud) 
                                 colAudUrl.audio(audData.getvalue(), format="audio/wav", width="stretch")
-            self.colData.space(size="small")
+            self.colData.space(size="small") 
+        if len(self.allSummary) > 1:
+            with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
+                                        vertical_alignment="center", key=f"{self.cont}_all"): 
+                st.write(self.allSummary) 
+                df = pd.DataFrame(self.allSummary)    
+                st.dataframe(df)
+    
+    def calcSumAll(self):
+        cotas = [result for result in self.results if result[15] == self.selDf]
+        self.newCotas = []
+        nCotas = len(cotas)
+        self.urlDocs = []
+        for c, cota in enumerate(cotas):
+            newCota = list(cota)
+            newCota[0] = f"{acessories(c+1).convertNumber(0)}/{nCotas}"
+            self.newCotas.append(newCota)
+            self.cont += 1
+        self.cols[0] = "#"
+        self.urlDocs.append(self.newCotas)
+        allLiq = [cota[-1] for cota in self.newCotas]
+        df = pd.DataFrame(self.newCotas, columns=self.cols)
+        self.nLanc = nCotas
+        dictNewLine = {self.cols[w]:[''] for w in range(len(self.cols))} 
+        dictNewLine[self.cols[0]] = ['soma']  
+        self.sumLiq = []
+        seqNums = [23, 24, 30, 31, 32]
+        for w in seqNums:
+            try:
+                df[self.cols[w]] = df[self.cols[w]].astype(float)
+                df[self.cols[w]] = df[self.cols[w]].round(2)
+            except:
+                df[self.cols[w]] = df[self.cols[w]].fillna(0)
+                df[self.cols[w]] = df[self.cols[w]].round(2)
+            totalSum = df[self.cols[w]].sum()
+            try:
+                if int(totalSum) == 0:
+                    totalSum = 0
+            except:
+                pass
+            dictNewLine[self.cols[w]] = [totalSum]
+            if w == seqNums[-1]:
+                self.sumLiq.append(totalSum)
+        newLine = pd.DataFrame(dictNewLine)
+        self.df = pd.concat([df, newLine], ignore_index=True)
+    
+    def summaryFull(self):
+        self.exprLanc = f":material/topic: :red[**{self.nLanc}**] _lançamento_" if self.nLanc <= 1 else f":material/topic: :red[**{acessories(self.nLanc).convertNumber(0)}**] _lançamentos_"
+        self.exprDf = f":material/person_apron: _deputado(a) federal_ :red[**{self.selDf}**]"
+        self.valReal = self.sumLiq[0]
+        for key in [("#", self.s+1), ("deputado(a) federal", self.selDf), 
+                    ("lançamento(s)", self.nLanc), ("soma", self.valReal)]:
+            self.allSummary.setdefault(key[0], [])
+            self.allSummary[key[0]].append (key[1])
+        self.exprLiq = f":material/money_bag: _despesa líquida geral de_ :red[**R$ {acessories(self.valReal).convertNumber(1)}**]"
+        self.exprLiq += f" (:blue[{(acessories(self.valReal).convertNumExt()).lower()}])"
     
     @st.cache_data(show_spinner=False, ttl=30, max_entries=2)
     def createAudVoice(_self, textAud: str) -> bytes:
@@ -326,6 +338,8 @@ class windowStream():
         
     def insertWidget(self):
         nSize = 4
+        st.subheader(":green[**Gastos da Câmara Federal - cota parlamentar**]", help="Mostra os gastos de deputados federais com a cota parlamentar.", 
+                     icon=":material/payments:", width="stretch", text_alignment="center", anchor=None)
         colStart, colEnd, colUf, colDf = st.columns([nSize*3, nSize*3, nSize*1.9, nSize**2], vertical_alignment="center", 
                                                      width="stretch")
         self.indMonths = [w + 1 for w in range(len(self.optMonthsAll))]
@@ -657,11 +671,18 @@ class operationFiles():
         optsName = sorted(optsName, key=lambda w: unidecode(w).lower())
         return(optsName, results) 
 
-    async def downPdfAsync(self, url: str) -> bytes:
+    async def downPdfAsync(self, url: str, maxRetries: int = 3, delay: float = 1.0):
         async with httpx.AsyncClient() as client:
-            response = await client.get(url)
-            response.raise_for_status()
-            return response.content    
+            for attempt in range(1, maxRetries + 1):
+                try:
+                    response = await client.get(url, timeout=5.0)
+                    response.raise_for_status()
+                    return response.content
+                except (httpx.RequestError, httpx.HTTPStatusError) as e:
+                    if attempt == maxRetries:
+                        raise e
+                    await asyncio.sleep(delay)
+                    delay *= 2  
     
 class main():
     def __init__(self):
