@@ -8,3 +8,4 @@ brutils
 httpx
 streamlit[pdf]
 gtts
+streamlit_extras
