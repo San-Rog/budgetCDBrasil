@@ -18,6 +18,7 @@ from unidecode import unidecode
 from brutils.currency import format_currency
 from brutils import convert_real_to_text
 from brutils.ibge.uf import convert_uf_to_name
+from streamlit_extras.scroll_to_element import *
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 class acessories():
@@ -158,8 +159,14 @@ class displayQuery():
         for self.s, self.selDf in enumerate(self.allSelDf):
             self.calcSumAll()
             self.summaryFull()
+            keyDf = f"{self.selDf}_{self.s + 1}"
+            scroll_to_element(keyDf)
+            addDf = [f"**Tabela com todos os gastos do(a) deputado(a) federal :red[{self.selDf}]**", 
+                     f"**Detalhamento dos gastos do(a) deputado(a) federal :red[{self.selDf}]**", 
+                     "mmmm"]            
             with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
-                                        vertical_alignment="center", key=self.cont): 
+                                        vertical_alignment="center", key=keyDf): 
+                st.subheader(addDf[0], icon=":material/list_alt:", width="stretch", text_alignment="center", anchor=None)
                 with st.container(border=True):
                     (colDfAll, ) = st.columns(1, border=False) 
                     colDfAll.markdown(self.exprDf)
@@ -170,6 +177,7 @@ class displayQuery():
                     if self.nSelDf > 1:
                         self.allDfs.append(self.df)
                 for url in self.urlDocs:
+                    st.subheader(addDf[1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)
                     for u, ur in enumerate(url):
                         with st.container(border=True):
                             self.cont += u
@@ -210,9 +218,24 @@ class displayQuery():
         if len(self.allSummary) > 1:
             with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
                                         vertical_alignment="center", key=f"{self.cont}_all"): 
-                st.write(self.allSummary) 
-                df = pd.DataFrame(self.allSummary)    
-                st.dataframe(df)
+                df = pd.DataFrame(self.allSummary)  
+                keysSumm = list(self.allSummary.keys())
+                for k, key in enumerate(keysSumm):
+                    match k: 
+                        case 1: 
+                            nDf = len(self.allSummary[key])
+                        case 2:
+                            qLanc = sum(self.allSummary[key])
+                        case 3:
+                            sumVal = sum(self.allSummary[key])
+                textSumm = f"{nDf} - {qLanc} - {(acessories(sumVal).convertNumExt()).lower()}   "
+                self.sumValues()
+                self.seqNums = [2, 3]
+                self.cols = self.colsSummary
+                self.df = df
+                self.sumValues()
+                st.markdown(textSumm)
+                st.dataframe(data=self.df, width="stretch", hide_index=True)
     
     def calcSumAll(self):
         cotas = [result for result in self.results if result[15] == self.selDf]
@@ -227,13 +250,17 @@ class displayQuery():
         self.cols[0] = "#"
         self.urlDocs.append(self.newCotas)
         allLiq = [cota[-1] for cota in self.newCotas]
-        df = pd.DataFrame(self.newCotas, columns=self.cols)
+        self.df = pd.DataFrame(self.newCotas, columns=self.cols)
         self.nLanc = nCotas
-        dictNewLine = {self.cols[w]:[''] for w in range(len(self.cols))} 
-        dictNewLine[self.cols[0]] = ['soma']  
         self.sumLiq = []
-        seqNums = [23, 24, 30, 31, 32]
-        for w in seqNums:
+        self.seqNums = [23, 24, 30, 31, 32]
+        self.sumValues()
+        
+    def sumValues(self): 
+        df = self.df
+        self.dictNewLine = {self.cols[w]:[''] for w in range(len(self.cols))} 
+        self.dictNewLine[self.cols[0]] = ['soma']  
+        for w in self.seqNums:
             try:
                 df[self.cols[w]] = df[self.cols[w]].astype(float)
                 df[self.cols[w]] = df[self.cols[w]].round(2)
@@ -246,23 +273,28 @@ class displayQuery():
                     totalSum = 0
             except:
                 pass
-            dictNewLine[self.cols[w]] = [totalSum]
-            if w == seqNums[-1]:
+            self.dictNewLine[self.cols[w]] = [totalSum]
+            if w == self.seqNums[-1]:
                 self.sumLiq.append(totalSum)
-        newLine = pd.DataFrame(dictNewLine)
+        newLine = pd.DataFrame(self.dictNewLine)
         self.df = pd.concat([df, newLine], ignore_index=True)
-    
+        
     def summaryFull(self):
         self.exprLanc = f":material/topic: :red[**{self.nLanc}**] _lançamento_" if self.nLanc <= 1 else f":material/topic: :red[**{acessories(self.nLanc).convertNumber(0)}**] _lançamentos_"
         self.exprDf = f":material/person_apron: _deputado(a) federal_ :red[**{self.selDf}**]"
         self.valReal = self.sumLiq[0]
-        for key in [("#", self.s+1), ("deputado(a) federal", self.selDf), 
-                    ("lançamento(s)", self.nLanc), ("soma", self.valReal)]:
+        keysSummary = [("#", self.s+1), ("deputado(a) federal", self.selDf), 
+                       ("lançamentos", self.nLanc), ("despesa líquida geral", self.valReal)]
+        sumLanc = float(0)
+        sumVal = float(0)
+        self.colsSummary = []
+        for k, key in enumerate(keysSummary):
+            self.colsSummary.append(key[0])
             self.allSummary.setdefault(key[0], [])
             self.allSummary[key[0]].append (key[1])
         self.exprLiq = f":material/money_bag: _despesa líquida geral de_ :red[**R$ {acessories(self.valReal).convertNumber(1)}**]"
         self.exprLiq += f" (:blue[{(acessories(self.valReal).convertNumExt()).lower()}])"
-    
+        
     @st.cache_data(show_spinner=False, ttl=30, max_entries=2)
     def createAudVoice(_self, textAud: str) -> bytes:
         nameTemp = "tempAud.wav"
