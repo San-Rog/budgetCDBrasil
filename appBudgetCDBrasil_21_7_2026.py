@@ -216,8 +216,10 @@ class displayQuery():
                                 colAudUrl.audio(audData.getvalue(), format="audio/wav", width="stretch")
             self.colData.space(size="small") 
         if len(self.allSummary) > 1:
+            keyDfAll = f"{self.cont}_all"
+            scroll_to_element(keyDfAll)
             with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
-                                        vertical_alignment="center", key=f"{self.cont}_all"): 
+                                        vertical_alignment="center", key=keyDfAll): 
                 st.subheader(addDf[-1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)                   
                 df = pd.DataFrame(self.allSummary)  
                 keysSumm = list(self.allSummary.keys())
