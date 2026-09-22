@@ -163,7 +163,7 @@ class displayQuery():
             scroll_to_element(keyDf)
             addDf = [f"**Tabela com todos os gastos do(a) deputado(a) federal :red[{self.selDf}]**", 
                      f"**Detalhamento dos gastos do(a) deputado(a) federal :red[{self.selDf}]**", 
-                     "mmmm"]            
+                     f"**Resumo dos gastos pesquisados**"]            
             with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
                                         vertical_alignment="center", key=keyDf): 
                 st.subheader(addDf[0], icon=":material/list_alt:", width="stretch", text_alignment="center", anchor=None)
@@ -202,7 +202,7 @@ class displayQuery():
                                         st.markdown(f":material/document_scanner: _documento baixado_") 
                                     else:
                                         st.markdown(f":material/skull: _documento não baixável de forma direta em virtude de captcha ou abas dependentes de comandos do usuário {addRec}")
-                                    st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{cont}")
+                                    st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{self.cont}")
                                 except Exception as e:
                                     eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
                                     st.markdown(f":material/document_scanner: _download não gerado_")
@@ -218,6 +218,7 @@ class displayQuery():
         if len(self.allSummary) > 1:
             with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
                                         vertical_alignment="center", key=f"{self.cont}_all"): 
+                st.subheader(addDf[-1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)                   
                 df = pd.DataFrame(self.allSummary)  
                 keysSumm = list(self.allSummary.keys())
                 for k, key in enumerate(keysSumm):
@@ -228,13 +229,17 @@ class displayQuery():
                             qLanc = sum(self.allSummary[key])
                         case 3:
                             sumVal = sum(self.allSummary[key])
-                textSumm = f"{nDf} - {qLanc} - {(acessories(sumVal).convertNumExt()).lower()}   "
+                colDetailAll, colLiqAll = st.columns(self.colTwo, border=False)
+                exprLancUrAll = f":material/topic: :red[**{acessories(nDf).convertNumber(0)}**] _lançamentos_"
+                exprLiqUrAll = f":material/money_bag: _despesa líquida global de_ :red[**R$ {acessories(sumVal).convertNumber(1)}**]"
+                exprLiqUrAll += f" (:blue[{(acessories(sumVal).convertNumExt()).lower()}])"
+                colDetailAll.markdown(exprLancUrAll)
+                colLiqAll.markdown(exprLiqUrAll)
                 self.sumValues()
                 self.seqNums = [2, 3]
                 self.cols = self.colsSummary
                 self.df = df
                 self.sumValues()
-                st.markdown(textSumm)
                 st.dataframe(data=self.df, width="stretch", hide_index=True)
     
     def calcSumAll(self):
