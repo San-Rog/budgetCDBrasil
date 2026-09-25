@@ -107,7 +107,6 @@ class displayQuery():
         self.arrow = ":material/arrow_range:"        
         self.screenExpander()  
         self.screenLaunch()
-        self.fixedBar()
     
     def screenExpander(self):
         dataAllSplit = acessories([self.start, self.end]).extractData()
@@ -248,38 +247,6 @@ class displayQuery():
                 self.df = df
                 self.sumValues()
                 st.dataframe(data=self.df, width="stretch", hide_index=True)
-    
-    def fixedBar(self):
-        dictButtFloat = {"Info": ["Informações", "keyButton_info", ":material/info:", "Dá mais informações sobre o aplicativo."], 
-                         "Vídeo": ["Vídeo", "keyButton_vídeo", ":material/video_library:", "Exibe vídeos sobre o aplicativo."], 
-                         "Limpeza": ["Limpeza", "keyButton_limpeza", ":material/cleaning_services:", "Limpa os dados da tela."], 
-                         "Saída": ["Saída", "keyButton_saída", ":material/exit_to_app:", "Sai do aplicativo."]}
-        barFloat = self.colData.container()
-        keyButtFloat = list(dictButtFloat.keys())
-        nKeys = len(keyButtFloat)
-        with barFloat:
-            colButtons = st.columns(nKeys)
-            for c, col in enumerate(colButtons):
-                elemButton = dictButtFloat[keyButtFloat[c]]
-                col.button(label=elemButton[0], key=elemButton[1], on_click=self.checkButtFloat, args=(c, ),  
-                           use_container_width=True, width="stretch", icon=elemButton[2], help=elemButton[3])
-            barFloat.float(
-                       "position: fixed; bottom: 35px; left: 25%; height: 60px; width: 50%; background-color: #D7F5F1; padding: 10px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 100;"
-            )
-    
-    def checkButtFloat(self, item):
-        match item:
-            case 0:
-                pass
-            case 1:
-                pass
-            case 2:
-                dictVal =helpPlace[1]
-                scroll_to_element(wordKeys[dictVal[3]])
-                st.session_state[wordKeys[5]] = None
-            case _:
-                st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.google.com'" />
-                            """, unsafe_allow_html=True)
     
     def calcSumAll(self):
         cotas = [result for result in self.results if result[15] == self.selDf]
@@ -552,7 +519,40 @@ class windowStream():
                 elemButton = dictButtons[keyButtons[c]]
                 col.button(label=elemButton[0], key=elemButton[1], on_click=self.checkButton, args=(c, ),  
                            use_container_width=True, width="stretch", icon=elemButton[2], help=elemButton[3])
-            self.colData = st.columns(1)[0]
+        self.colData = st.columns(1)[0]
+        self.fixedBar()
+        
+    def fixedBar(self):
+        dictButtFloat = {"Info": ["Informações", "keyButton_info", ":material/info:", "Dá mais informações sobre o aplicativo."], 
+                         "Vídeo": ["Vídeo", "keyButton_vídeo", ":material/video_library:", "Exibe vídeos sobre o aplicativo."], 
+                         "Limpeza": ["Limpeza", "keyButton_limpeza", ":material/cleaning_services:", "Limpa os dados da tela."], 
+                         "Saída": ["Saída", "keyButton_saída", ":material/exit_to_app:", "Sai do aplicativo."]}
+        barFloat = self.colData.container()
+        keyButtFloat = list(dictButtFloat.keys())
+        nKeys = len(keyButtFloat)
+        with barFloat:
+            colButtons = st.columns(nKeys)
+            for c, col in enumerate(colButtons):
+                elemButton = dictButtFloat[keyButtFloat[c]]
+                col.button(label=elemButton[0], key=elemButton[1], on_click=self.checkButtFloat, args=(c, ),  
+                           use_container_width=True, width="stretch", icon=elemButton[2], help=elemButton[3])
+            barFloat.float(
+                       "position: fixed; bottom: 15px; left: 25%; height: 60px; width: 50%; background-color: #E6E4F5; padding: 10px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 100;"
+            )
+    
+    def checkButtFloat(self, item):
+        match item:
+            case 0:
+                pass
+            case 1:
+                pass
+            case 2:
+                dictVal =helpPlace[1]
+                scroll_to_element(wordKeys[dictVal[3]])
+                st.session_state[wordKeys[5]] = None
+            case _:
+                st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.google.com'" />
+                            """, unsafe_allow_html=True)
         
     def checkButton(self, value):
         match value:
