@@ -264,7 +264,7 @@ class displayQuery():
                 col.button(label=elemButton[0], key=elemButton[1], on_click=self.checkButtFloat, args=(c, ),  
                            use_container_width=True, width="stretch", icon=elemButton[2], help=elemButton[3])
             barFloat.float(
-                       "position: fixed; bottom: 35px; left: 25%; width: 50%; background-color: cyan; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 100;"
+                       "position: fixed; bottom: 35px; left: 25%; height: 60px; width: 50%; background-color: #D7F5F1; padding: 10px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 100;"
             )
     
     def checkButtFloat(self, item):
