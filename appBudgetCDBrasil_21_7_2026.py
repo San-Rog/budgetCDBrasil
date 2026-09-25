@@ -365,7 +365,7 @@ class displayQuery():
         st.markdown(text, unsafe_allow_html=True)
         buttClose = st.button(label="Fechar", key="keyButton_close", icon=":material/disabled_by_default:")
         if buttClose:
-            st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.google.com'" />
+            st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.mozilla.org/pt-BR/'" />
                         """, unsafe_allow_html=True)          
 
 class windowStream():
