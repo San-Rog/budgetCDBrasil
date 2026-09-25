@@ -551,14 +551,8 @@ class windowStream():
                 scroll_to_element(wordKeys[dictVal[3]])
                 st.session_state[wordKeys[5]] = None
             case _:
-                st.components.v1.html(
-                    """
-                    <script>
-                        window.close();
-                    </script>
-                    """,
-                    height=0,
-                )
+                st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.google.com.br'" />
+                            """, unsafe_allow_html=True)
         
     def checkButton(self, value):
         match value:
