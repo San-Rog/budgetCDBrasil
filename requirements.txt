@@ -9,3 +9,4 @@ httpx
 streamlit[pdf]
 gtts
 streamlit_extras
+streamlit_float 
