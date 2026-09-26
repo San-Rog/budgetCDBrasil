@@ -16,6 +16,7 @@ from datetime import date
 from decimal import Decimal
 from streamlit_float import *
 from unidecode import unidecode
+from validate_docbr import CPF, CNPJ
 from brutils.currency import format_currency
 from brutils import convert_real_to_text
 from brutils.ibge.uf import convert_uf_to_name
@@ -32,15 +33,37 @@ class acessories():
                 num = self.alphaNum
             else:
                 num = format_currency(self.alphaNum).replace('R$', '').split(',')[0]
-        else:
+        elif mode == 1:
             num = format_currency(self.alphaNum).replace('R$', '')
+        else:
+            num = format_currency(self.alphaNum)
+            if num is None: 
+                num = ""
         return num 
         
     def convertNumExt(self):
         value = Decimal(self.alphaNum)
         extensive = convert_real_to_text(value)
         return extensive
-    
+        
+    def checkCnpjCpf(self): 
+        cpf = CPF()
+        cnpj = CNPJ()
+        codeClean = re.sub(r'[^0-9]', '', self.alphaNum)
+        nCode = len(codeClean)
+        newCode = None
+        if nCode != 0:
+            if nCode == 14:
+                newCode = cnpj.mask(codeClean)
+            else:
+                newCode = cpf.mask(codeClean)
+        else:
+            return codeClean
+        if newCode is None:
+            return self.alphaNum
+        else: 
+            return newCode
+            
     def extractData(self):
         dataAllSplit = []
         nums = [str(num) for num in range(self.alphaNum[0], self.alphaNum[1]+1)]
@@ -104,6 +127,7 @@ class displayQuery():
         self.colTwo = [4, 10]
         self.allSelDf, self.colData, self.start, self.end = (allSelDf, colData, start, end)
         self.cols, self.results = (cols, results)
+        self.categ = categ
         self.arrow = ":material/arrow_range:"        
         self.screenExpander()  
         self.screenLaunch()
@@ -175,7 +199,14 @@ class displayQuery():
                     colAunch, colSum = st.columns(self.colTwo, border=False, width="stretch")
                     colAunch.markdown(self.exprLanc) 
                     colSum.markdown(self.exprLiq)
-                    st.dataframe(data=self.df, width="stretch", hide_index=True)
+                    if self.categ in [0, 1]:
+                        if self.categ == 0: 
+                            st.dataframe(data=self.df, width="stretch", hide_index=True)
+                        else:
+                            st.write(self.cols)
+                            self.colsMonet = [2, 4, 21, 23, 24, 30, 31, 32]
+                            self.configDataFrame()
+                            st.dataframe(data=self.dfCopy, width="stretch", hide_index=True)
                     if self.nSelDf > 1:
                         self.allDfs.append(self.df)
                 for url in self.urlDocs:
@@ -306,6 +337,15 @@ class displayQuery():
         self.exprLiq = f":material/money_bag: _despesa líquida geral de_ :red[**R$ {acessories(self.valReal).convertNumber(1)}**]"
         self.exprLiq += f" (:blue[{(acessories(self.valReal).convertNumExt()).lower()}])"
         
+    def configDataFrame(self):
+        self.dfCopy = self.df.copy()
+        for c, col in enumerate(self.cols):
+            if c in self.colsMonet:
+                if c in self.colsMonet[:2]:
+                    self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).checkCnpjCpf()}")
+                else:
+                    self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertNumber(2)}")
+        
     @st.cache_data(show_spinner=False, ttl=30, max_entries=2)
     def createAudVoice(_self, textAud: str) -> bytes:
         nameTemp = "tempAud.wav"
@@ -365,7 +405,7 @@ class displayQuery():
         st.markdown(text, unsafe_allow_html=True)
         buttClose = st.button(label="Fechar", key="keyButton_close", icon=":material/disabled_by_default:")
         if buttClose:
-            st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.mozilla.org/pt-BR/'" />
+            st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.google.com'" />
                         """, unsafe_allow_html=True)          
 
 class windowStream():
@@ -381,8 +421,9 @@ class windowStream():
         
     def insertWidget(self):
         nSize = 4
-        st.subheader(":green[**Gastos da Câmara Federal - cota parlamentar**]", help="Mostra os gastos de deputados federais com a cota parlamentar.", 
-                     icon=":material/payments:", width="stretch", text_alignment="center", anchor=None)
+        #st.space()
+        #st.subheader(":green[**Gastos da Câmara Federal - cota parlamentar**]", help="Mostra os gastos de deputados federais com a cota parlamentar.", 
+        #             icon=":material/payments:", width="stretch", text_alignment="center", anchor=None)
         colStart, colEnd, colUf, colDf = st.columns([nSize*3, nSize*3, nSize*1.9, nSize**2], vertical_alignment="center", 
                                                      width="stretch")
         self.indMonths = [w + 1 for w in range(len(self.optMonthsAll))]
@@ -537,7 +578,7 @@ class windowStream():
                 col.button(label=elemButton[0], key=elemButton[1], on_click=self.checkButtFloat, args=(c, ),  
                            use_container_width=True, width="stretch", icon=elemButton[2], help=elemButton[3])
             barFloat.float(
-                       "position: fixed; bottom: 15px; left: 25%; height: 60px; width: 50%; background-color: #E6E4F5; padding: 10px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 100;"
+                       "position: fixed; bottom: 17px; left: 25%; height: 60px; width: 50%; background-color: #E6E4F5; padding: 10px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 100;"
             )
     
     def checkButtFloat(self, item):
@@ -551,7 +592,7 @@ class windowStream():
                 scroll_to_element(wordKeys[dictVal[3]])
                 st.session_state[wordKeys[5]] = None
             case _:
-                st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.google.com.br'" />
+                st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.mozilla.org/pt-BR/'" />
                             """, unsafe_allow_html=True)
         
     def checkButton(self, value):
