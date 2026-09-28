@@ -148,6 +148,53 @@ class displayQuery():
     def __init__(self, title):
         self.title = title 
         
+    def setPage(self, mode):
+        st.html("""
+            <style>
+                .blockScreen {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    background-color: rgba(0, 0, 0, 1); 
+                    backdrop-filter: blur(10px);           
+                    z-index: 99999;                        
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                }
+                .customSpinner {
+                    width: 60px;
+                    height: 60px;
+                    border: 6px solid #f3f3f3;
+                    border-top: 6px solid #FF4B4B; 
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                }
+                .textLoaded {
+                    color: white;
+                    font-family: sans-serif;
+                    font-size: 1.2rem;
+                    margin-top: 15px;
+                    font-weight: 500;
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+            """)
+        if mode == 0:
+            st.set_page_config(
+                page_title='Cotas parlamentares/Câmara dos Deputados',
+                page_icon=':material/image:',
+                layout='wide', 
+                initial_sidebar_state=None, 
+                menu_items=None
+            )  
+    
     def setHtmlPlace(self, colSet):
         if colSet is None:
             self.placeholderBlock = st.empty()
@@ -224,15 +271,16 @@ class displayQuery():
         self.cont = 0
         nAllSelDf = len(self.allSelDf)
         self.allSummary = {}
-        self.lastKey = ""
+        #self.lastKey = ""
         self.colsMonet = [2, 4, 3, 21, 23, 24, 30, 31, 32]
         self.colsDate = [5, 6, 14]
         self.colState = [26]
+        self.placeText = acessories(None).definePlace()
+        objDisplay = displayQuery("").setPage(1)
         for self.s, self.selDf in enumerate(self.allSelDf):
+            keyDf = f"{self.selDf}_{self.s + 1}"
             self.calcSumAll()
             self.summaryFull()
-            keyDf = f"{self.selDf}_{self.s + 1}"
-            scroll_to_element(keyDf)
             addDf = [f"**Tabela com todos os gastos do(a) deputado(a) federal :red[{self.selDf}]**", 
                      f"**Detalhamento dos gastos do(a) deputado(a) federal :red[{self.selDf}]**", 
                      f"**Resumo dos gastos pesquisados**"]            
@@ -257,8 +305,10 @@ class displayQuery():
                 for url in self.urlDocs:
                     st.subheader(addDf[1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)
                     for u, ur in enumerate(url):
-                        self.lastKey = keyDf = f"{self.selDf}_{self.s + 1}_{u+1}"
-                        with st.container(border=True):
+                        #self.lastKey = f"{self.selDf}_{self.s + 1}_{u+1}"
+                        keyDfUrl = f"{self.selDf}_{self.s + 1}_{u+1}"
+                        with st.container(border=True, key=keyDfUrl):
+                            scroll_to_element(keyDfUrl)
                             self.cont += u
                             (colDf, ) = st.columns(1, border=False)
                             colDf.markdown(self.exprDf)
@@ -298,7 +348,8 @@ class displayQuery():
                                 textAud = f"Para tentar fazer download, dê um clique no link {url} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
                                 audData = self.createAudVoice(textAud) 
                                 colAudUrl.audio(audData.getvalue(), format="audio/wav", width="stretch")
-            self.colData.space(size="small") 
+            self.colData.space(size="small")
+        #scroll_to_element(self.lastKey)
         
     def calcSumAll(self):
         cotas = [result for result in self.results if result[15] == self.selDf]
@@ -847,62 +898,16 @@ class main():
         st.session_state[wordKeys[0]] += 1
         self.dirDbZsdtSt = r"C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_chunks_Github"
         self.dirDbZsdtGit = "./quotaAll"
-        self.setPage()
         self.placeText = acessories(None).definePlace()
         objDisplay = displayQuery(self.placeText)
         placeHolder = objDisplay.setHtmlPlace(None)
+        objDisplay.setPage(0)
         self.isRunning()
         self.fileDbZsdt = "cota_parlamentar_CD_scraping.db.zst"
         self.fileDb = "cota_parlamentar_CD_scraping.db"
         self.tableDb = "gastos_cota_CD"
         self.initiationSql()
         placeHolder.empty()
-        
-    def setPage(self):
-        st.html("""
-            <style>
-                .blockScreen {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100vw;
-                    height: 100vh;
-                    background-color: rgba(0, 0, 0, 1); 
-                    backdrop-filter: blur(10px);           
-                    z-index: 99999;                        
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                }
-                .customSpinner {
-                    width: 60px;
-                    height: 60px;
-                    border: 6px solid #f3f3f3;
-                    border-top: 6px solid #FF4B4B; 
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
-                }
-                .textLoaded {
-                    color: white;
-                    font-family: sans-serif;
-                    font-size: 1.2rem;
-                    margin-top: 15px;
-                    font-weight: 500;
-                }
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-            </style>
-            """)
-        st.set_page_config(
-            page_title='Cotas parlamentares/Câmara dos Deputados',
-            page_icon=':material/image:',
-            layout='wide', 
-            initial_sidebar_state=None, 
-            menu_items=None
-        )
         
     def isRunning(self):
         if os.path.exists(self.dirDbZsdtSt):
