@@ -13,6 +13,7 @@ from gtts import gTTS
 import streamlit as st
 import zstandard as zstd
 from datetime import date
+from datetime import datetime
 from decimal import Decimal
 from streamlit_float import *
 from unidecode import unidecode
@@ -46,6 +47,48 @@ class acessories():
         extensive = convert_real_to_text(value)
         return extensive
         
+    def convertLegis(self): 
+        #chrome-extension://oemmndcbldboiebfnladdacbdfmadadm/https://www25.senado.leg.br/documents/130884256/132289867/TABELA+DE+LEGISLATURAS.pdf/afe38c27-4685-4d78-b1d0-7fdacb93b689
+        dictLegis = {"53": ["01/02/2007", "31/01/2011"], "54": ["01/02/2011", "31/01/2015"], 
+                     "55": ["01/02/2015", "31/01/2019"], "56": ["01/02/2019", "31/01/2023"], 
+                     "57": ["01/02/2023", "31/01/2027"]}
+        try:
+            vaLegis = dictLegis[self.alphaNum.strip()]
+            exprLegis = f"{self.alphaNum} ({vaLegis[0]} a {vaLegis[1]})"
+            return exprLegis
+        except:
+            return self.alphaNum
+    
+    def convertState(self):
+        if self.alphaNum.strip() == "":
+           return self.alphaNum
+        try:
+            nameStr = convert_uf_to_name(self.alphaNum)
+            nameState = f"{self.alphaNum} ({nameStr})" if nameStr is not None else self.alphaNum 
+        except:
+            nameState = self.alphaNum
+        return nameState
+        
+    def convertDate(self, categ): 
+        if self.alphaNum.strip() == "":
+            return self.alphaNum
+        if categ == 0:
+            try:
+                dateIso = self.alphaNum
+                dateObj = datetime.fromisoformat(dateIso)
+                dateFormat = dateObj.strftime("%d/%m/%Y, %H:%M:%S") 
+                dateFormat = f"{self.alphaNum} ({dateFormat})"
+            except:
+                dateFormat = self.alphaNum
+            return dateFormat
+        else:
+            try:
+                monthFormat = calendar.month_name[int(self.alphaNum)].lower()
+                monthFormat = f"{self.alphaNum} ({monthFormat})"
+            except:
+                monthFormat = self.alphaNum
+            return monthFormat            
+    
     def checkCnpjCpf(self): 
         cpf = CPF()
         cnpj = CNPJ()
@@ -182,6 +225,9 @@ class displayQuery():
         nAllSelDf = len(self.allSelDf)
         self.allSummary = {}
         self.lastKey = ""
+        self.colsMonet = [2, 4, 3, 21, 23, 24, 30, 31, 32]
+        self.colsDate = [5, 6, 14]
+        self.colState = [26]
         for self.s, self.selDf in enumerate(self.allSelDf):
             self.calcSumAll()
             self.summaryFull()
@@ -203,9 +249,8 @@ class displayQuery():
                         if self.categ == 0: 
                             st.dataframe(data=self.df, width="stretch", hide_index=True)
                         else:
-                            st.write(self.cols)
-                            self.colsMonet = [2, 4, 21, 23, 24, 30, 31, 32]
-                            self.configDataFrame()
+                            self.dfOrig = self.df
+                            self.configDataFrame(0)
                             st.dataframe(data=self.dfCopy, width="stretch", hide_index=True)
                     if self.nSelDf > 1:
                         self.allDfs.append(self.df)
@@ -225,7 +270,12 @@ class displayQuery():
                             colDetail.markdown(exprLancUr)
                             colLiq.markdown(exprLiqUr)
                             url = ur[29]
-                            st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
+                            if self.categ == 0:
+                                st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
+                            else:
+                                self.dfOrig = self.df.iloc[[u]]
+                                self.configDataFrame(0)
+                                st.dataframe(data=self.dfCopy, width="stretch", hide_index=True)
                             if url.strip() == '':
                                 st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
                             else:
@@ -277,7 +327,11 @@ class displayQuery():
                 self.cols = self.colsSummary
                 self.df = df
                 self.sumValues()
-                st.dataframe(data=self.df, width="stretch", hide_index=True)
+                if self.categ == 0: 
+                    st.dataframe(data=self.df, width="stretch", hide_index=True)
+                else:
+                    self.configDataFrame(1)
+                    st.dataframe(data=self.dfCopy, width="stretch", hide_index=True)
     
     def calcSumAll(self):
         cotas = [result for result in self.results if result[15] == self.selDf]
@@ -337,15 +391,44 @@ class displayQuery():
         self.exprLiq = f":material/money_bag: _despesa líquida geral de_ :red[**R$ {acessories(self.valReal).convertNumber(1)}**]"
         self.exprLiq += f" (:blue[{(acessories(self.valReal).convertNumExt()).lower()}])"
         
-    def configDataFrame(self):
-        self.dfCopy = self.df.copy()
-        for c, col in enumerate(self.cols):
-            if c in self.colsMonet:
-                if c in self.colsMonet[:2]:
-                    self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).checkCnpjCpf()}")
+    def configDataFrame(self, item):
+        newCols = {}
+        if item == 0:
+            self.dfCopy = self.dfOrig.copy()
+            for c, col in enumerate(self.cols):
+                newCols.setdefault(col, '')
+                if c in self.colsMonet:
+                    newCols[col] = f"*{col}"
+                    if c in self.colsMonet[:2]:
+                        self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).checkCnpjCpf()}")
+                    elif c == self.colsMonet[2]: 
+                        self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertLegis()}")
+                    else:
+                        self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertNumber(2)}")
                 else:
+                    if c == self.colState[0]: 
+                        newCols[col] = f"*{col}"
+                        self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertState()}")
+                    elif c in self.colsDate: 
+                        newCols[col] = f"*{col}"
+                        if c in self.colsDate[:2]: 
+                            self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertDate(0)}")
+                        else: 
+                            self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertDate(1)}")
+                    else:
+                        newCols[col] = col
+        else: 
+            self.dfCopy = self.df.copy()
+            nCols = len(self.colsSummary)
+            for c, col in enumerate(self.colsSummary):
+                newCols.setdefault(col, '')
+                if c == (nCols - 1): 
+                    newCols[col] = f"*{col}"
                     self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertNumber(2)}")
-        
+                else:
+                    newCols[col] = col  
+        self.dfCopy.rename(columns=newCols, inplace=True)        
+                
     @st.cache_data(show_spinner=False, ttl=30, max_entries=2)
     def createAudVoice(_self, textAud: str) -> bytes:
         nameTemp = "tempAud.wav"
@@ -546,7 +629,7 @@ class windowStream():
         keyButt = "keyButton"
         prefixButt = "button"
         dictButtons = {"tela_original": ["original", f"{keyButt}Original", ":material/screen_search_desktop:", "Exibe os dados originais do site."], 
-                       "tela_modificada": ["modificada", f"{keyButt}Modify", ":material/edit_square:", "Exibe os dados com parcial modificação de formato."], 
+                       "tela_modificada": ["modificada", f"{keyButt}Modify", ":material/edit_square:", f"Exibe os dados com parcial modificação/adaptação de formato. (Conferir campos marcados por um asterisco.)"], 
                        "tela_grapho": ["gráfico", f"{keyButt}Grapho", ":material/insert_chart:", "Plota gráfico com os dados."], 
                        "tela_errores": ["erros", f"{keyButt}Errores", ":material/report:", "Exibe relatório de erros da base de dados da Câmara Federal."],
                        "tela_pdf": ["pdf", f"{keyButt}Pdf", ":material/picture_as_pdf:", "Gera arquivo PDF."], 
