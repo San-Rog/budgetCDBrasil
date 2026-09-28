@@ -76,7 +76,7 @@ class acessories():
             try:
                 dateIso = self.alphaNum
                 dateObj = datetime.fromisoformat(dateIso)
-                dateFormat = dateObj.strftime("%d/%m/%Y, %H:%M:%S") 
+                dateFormat = dateObj.strftime("%d/%m/%Y, %Hh%Mmin%Ss") 
                 dateFormat = f"{self.alphaNum} ({dateFormat})"
             except:
                 dateFormat = self.alphaNum
@@ -250,7 +250,7 @@ class displayQuery():
                             st.dataframe(data=self.df, width="stretch", hide_index=True)
                         else:
                             self.dfOrig = self.df
-                            self.configDataFrame(0)
+                            self.configDataFrame()
                             st.dataframe(data=self.dfCopy, width="stretch", hide_index=True)
                     if self.nSelDf > 1:
                         self.allDfs.append(self.df)
@@ -274,7 +274,7 @@ class displayQuery():
                                 st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
                             else:
                                 self.dfOrig = self.df.iloc[[u]]
-                                self.configDataFrame(0)
+                                self.configDataFrame()
                                 st.dataframe(data=self.dfCopy, width="stretch", hide_index=True)
                             if url.strip() == '':
                                 st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
@@ -299,40 +299,7 @@ class displayQuery():
                                 audData = self.createAudVoice(textAud) 
                                 colAudUrl.audio(audData.getvalue(), format="audio/wav", width="stretch")
             self.colData.space(size="small") 
-        if len(self.allSummary) > 1:
-            keyDfAll = f"{self.cont}_all"
-            scroll_to_element(keyDfAll)
-            self.lastKey = keyDfAll
-            with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
-                                        vertical_alignment="center", key=keyDfAll): 
-                st.subheader(addDf[-1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)                   
-                df = pd.DataFrame(self.allSummary)  
-                keysSumm = list(self.allSummary.keys())
-                for k, key in enumerate(keysSumm):
-                    match k: 
-                        case 1: 
-                            nDf = len(self.allSummary[key])
-                        case 2:
-                            qLanc = sum(self.allSummary[key])
-                        case 3:
-                            sumVal = sum(self.allSummary[key])
-                colDetailAll, colLiqAll = st.columns(self.colTwo, border=False)
-                exprLancUrAll = f":material/topic: :red[**{acessories(nDf).convertNumber(0)}**] _lançamentos_"
-                exprLiqUrAll = f":material/money_bag: _despesa líquida global de_ :red[**R$ {acessories(sumVal).convertNumber(1)}**]"
-                exprLiqUrAll += f" (:blue[{(acessories(sumVal).convertNumExt()).lower()}])"
-                colDetailAll.markdown(exprLancUrAll)
-                colLiqAll.markdown(exprLiqUrAll)
-                self.sumValues()
-                self.seqNums = [2, 3]
-                self.cols = self.colsSummary
-                self.df = df
-                self.sumValues()
-                if self.categ == 0: 
-                    st.dataframe(data=self.df, width="stretch", hide_index=True)
-                else:
-                    self.configDataFrame(1)
-                    st.dataframe(data=self.dfCopy, width="stretch", hide_index=True)
-    
+        
     def calcSumAll(self):
         cotas = [result for result in self.results if result[15] == self.selDf]
         self.newCotas = []
@@ -391,42 +358,31 @@ class displayQuery():
         self.exprLiq = f":material/money_bag: _despesa líquida geral de_ :red[**R$ {acessories(self.valReal).convertNumber(1)}**]"
         self.exprLiq += f" (:blue[{(acessories(self.valReal).convertNumExt()).lower()}])"
         
-    def configDataFrame(self, item):
+    def configDataFrame(self):
         newCols = {}
-        if item == 0:
-            self.dfCopy = self.dfOrig.copy()
-            for c, col in enumerate(self.cols):
-                newCols.setdefault(col, '')
-                if c in self.colsMonet:
-                    newCols[col] = f"*{col}"
-                    if c in self.colsMonet[:2]:
-                        self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).checkCnpjCpf()}")
-                    elif c == self.colsMonet[2]: 
-                        self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertLegis()}")
-                    else:
-                        self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertNumber(2)}")
+        self.dfCopy = self.dfOrig.copy()
+        for c, col in enumerate(self.cols):
+            newCols.setdefault(col, '')
+            if c in self.colsMonet:
+                newCols[col] = f"*{col}"
+                if c in self.colsMonet[:2]:
+                    self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).checkCnpjCpf()}")
+                elif c == self.colsMonet[2]: 
+                    self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertLegis()}")
                 else:
-                    if c == self.colState[0]: 
-                        newCols[col] = f"*{col}"
-                        self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertState()}")
-                    elif c in self.colsDate: 
-                        newCols[col] = f"*{col}"
-                        if c in self.colsDate[:2]: 
-                            self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertDate(0)}")
-                        else: 
-                            self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertDate(1)}")
-                    else:
-                        newCols[col] = col
-        else: 
-            self.dfCopy = self.df.copy()
-            nCols = len(self.colsSummary)
-            for c, col in enumerate(self.colsSummary):
-                newCols.setdefault(col, '')
-                if c == (nCols - 1): 
-                    newCols[col] = f"*{col}"
                     self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertNumber(2)}")
+            else:
+                if c == self.colState[0]: 
+                    newCols[col] = f"*{col}"
+                    self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertState()}")
+                elif c in self.colsDate: 
+                    newCols[col] = f"*{col}"
+                    if c in self.colsDate[:2]: 
+                        self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertDate(0)}")
+                    else: 
+                        self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertDate(1)}")
                 else:
-                    newCols[col] = col  
+                    newCols[col] = col
         self.dfCopy.rename(columns=newCols, inplace=True)        
                 
     @st.cache_data(show_spinner=False, ttl=30, max_entries=2)
