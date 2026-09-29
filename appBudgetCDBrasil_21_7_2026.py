@@ -645,11 +645,13 @@ class windowStream():
         nKeys = len(keyButtons)
         nSelfDf = len(self.allSelDf)
         if nSelfDf > 0:
-            colButtons = st.columns(nKeys)
-            for c, col in enumerate(colButtons):
-                elemButton = dictButtons[keyButtons[c]]
-                col.button(label=elemButton[0], key=elemButton[1], on_click=self.checkButton, args=(c, ),  
-                           use_container_width=True, width="stretch", icon=elemButton[2], help=elemButton[3])
+            with st.container(border=True, width="stretch", horizontal_alignment="center", 
+                         vertical_alignment="center"):
+                colButtons = st.columns(nKeys)
+                for c, col in enumerate(colButtons):
+                    elemButton = dictButtons[keyButtons[c]]
+                    col.button(label=elemButton[0], key=elemButton[1], on_click=self.checkButton, args=(c, ),  
+                               use_container_width=True, width="stretch", icon=elemButton[2], help=elemButton[3])
         self.colData = st.columns(1)[0]
         self.fixedBar()
         
@@ -657,7 +659,8 @@ class windowStream():
         dictButtFloat = {"Info": ["Informações", "keyButton_info", ":material/info:", "Dá mais informações sobre o aplicativo."], 
                          "Vídeo": ["Vídeo", "keyButton_vídeo", ":material/video_library:", "Exibe vídeos sobre o aplicativo."], 
                          "Limpeza": ["Limpeza", "keyButton_limpeza", ":material/cleaning_services:", "Limpa os dados da tela."], 
-                         "Saída": ["Saída", "keyButton_saída", ":material/exit_to_app:", "Sai do aplicativo."]}
+                         "Saída": ["Saída", "keyButton_saída", ":material/exit_to_app:", "Sai do aplicativo."], 
+                         "Topo": ["Topo", "keyButton_topo", ":material/arrow_circle_up:", "Vai para o topo do aplicativo sem limpar os campos informados."]}
         barFloat = self.colData.container()
         keyButtFloat = list(dictButtFloat.keys())
         nKeys = len(keyButtFloat)
@@ -668,7 +671,7 @@ class windowStream():
                 col.button(label=elemButton[0], key=elemButton[1], on_click=self.checkButtFloat, args=(c, ),  
                            use_container_width=True, width="stretch", icon=elemButton[2], help=elemButton[3])
             barFloat.float(
-                       "position: fixed; bottom: 17px; left: 25%; height: 60px; width: 50%; background-color: #E6E4F5; padding: 10px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 100;"
+                       "position: fixed; bottom: 17px; left: 5%; height: 60px; width: 90%; background-color: #E6E4F5; padding: 10px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 100;"
             )
     
     def checkButtFloat(self, item):
@@ -678,13 +681,16 @@ class windowStream():
             case 1:
                 pass
             case 2:
-                dictVal =helpPlace[1]
+                dictVal = helpPlace[1]
                 scroll_to_element(wordKeys[dictVal[3]])
                 st.session_state[wordKeys[5]] = None
-            case _:
+            case 3:
                 st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.mozilla.org/pt-BR/'" />
                             """, unsafe_allow_html=True)
-        
+            case 4:
+                dictVal = helpPlace[1]
+                scroll_to_element(wordKeys[dictVal[3]])
+    
     def checkButton(self, value):
         match value:
             case 0 | 1:
@@ -708,6 +714,7 @@ class windowStream():
             case 5:
                 #objDisplay.filterDf(self.cols)
                 pass
+    
     
     def defineMonths(self, num):
         yearSel = self.yearStart
@@ -962,7 +969,7 @@ if __name__ == '__main__':
     textPlaceAll = ["Executando rotinas do app. Aguarde..."]    
     wordKeys = ['count', 'enableMonthStart', 'enableYearEnd', 'enableMonthEnd', 
                 'enableUfs', 'valYearStart', 'valMonthStart', 'valYearEnd', 'valMonthEnd', 
-                'valUf', 'valDf', 'countSearch', 'allFillters']
+                'valUf', 'valDf', 'countSearch', 'allFillters', 'lastKey']
     for w, wordKey in enumerate(wordKeys):
         if w == 0:
             val = 0
@@ -975,9 +982,10 @@ if __name__ == '__main__':
         elif w == 11:
             val = 0
         else:
-            val = False
+            val = ""
         if wordKey not in st.session_state:
             st.session_state[wordKey] = val
     seps = ["***", "&&&"]
     main()   
 #https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
+    
