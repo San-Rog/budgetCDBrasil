@@ -500,6 +500,7 @@ class displayQuery():
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
+        #self.sqlCols, self.sqlFilters, self.fileDb, self.tableDb
         self.cols = cols
         self.filters = filters
         self.keys = sorted(list(filters.keys()))
@@ -522,7 +523,8 @@ class windowStream():
         optYears.insert(0, '')
         self.optYearsEnd = []
         self.optMonthsEnd = []
-        optUfs = self.filters[self.keys[2]]
+        optPart = self.filters[self.keys[2]]
+        optUfs = self.filters[self.keys[3]]
         nOptUfs = len(optUfs)
         optUfs.insert(0, '')
         self.optMonths = []
@@ -838,7 +840,7 @@ class operationFiles():
         dictFilters = {}
         connDisk = sqlite3.connect(fileDb)
         cursor = connDisk.cursor()
-        fieldsDb = [allFieldsDb[z] for z in range(zFieldsDb) if z in [1, 14, 26]]
+        fieldsDb = [allFieldsDb[z] for z in range(zFieldsDb) if z in [1, 14, 25, 26]]
         for fielDb in fieldsDb: 
             query = f"SELECT DISTINCT {fielDb} FROM {_self.tableDb} ORDER BY {fielDb} ASC"
             df = pd.read_sql(query, connDisk)
