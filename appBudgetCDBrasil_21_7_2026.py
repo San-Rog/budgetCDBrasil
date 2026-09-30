@@ -89,6 +89,13 @@ class acessories():
                 monthFormat = self.alphaNum
             return monthFormat            
     
+    def checkPartyAcronym(self): 
+        try: 
+            partyAcronym = f"{self.alphaNum} ({dictPartyAcronym[self.alphaNum]})"
+            return partyAcronym
+        except: 
+            return self.alphaNum 
+    
     def checkCnpjCpf(self): 
         cpf = CPF()
         cnpj = CNPJ()
@@ -274,6 +281,7 @@ class displayQuery():
         #self.lastKey = ""
         self.colsMonet = [2, 4, 3, 21, 23, 24, 30, 31, 32]
         self.colsDate = [5, 6, 14]
+        self.colsParty = [25]
         self.colState = [26]
         self.placeText = acessories(None).definePlace()
         objDisplay = displayQuery("").setPage(1)
@@ -432,6 +440,9 @@ class displayQuery():
                         self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertDate(0)}")
                     else: 
                         self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).convertDate(1)}")
+                elif c in self.colsParty: 
+                    newCols[col] = f"*{col}"
+                    self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).checkPartyAcronym()}")                
                 else:
                     newCols[col] = col
         self.dfCopy.rename(columns=newCols, inplace=True)        
@@ -902,7 +913,7 @@ class operationFiles():
     
 class main():
     def __init__(self):
-        global dataSiteCd, fileParty
+        global dataSiteCd, dictPartyAcronym
         dataSiteCd = []
         st.session_state[wordKeys[0]] += 1
         self.dirDbZsdtSt = r"C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_chunks_Github"
@@ -912,7 +923,8 @@ class main():
         placeHolder = objDisplay.setHtmlPlace(None)
         objDisplay.setPage(0)
         self.isRunning()
-        fileParty = self.fileParty
+        self.fullParty()
+        dictPartyAcronym = self.dictPartyAcronym
         self.fileDbZsdt = "cota_parlamentar_CD_scraping.db.zst"
         self.fileDb = "cota_parlamentar_CD_scraping.db"
         self.tableDb = "gastos_cota_CD"
@@ -938,6 +950,17 @@ class main():
             css = f.read()
         st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
             
+    def fullParty(self): 
+        with open(self.fileParty, "r", encoding="utf-8") as f:
+            lines = [line.strip() for line in f.readlines() if line.strip() != ""]
+        self.dictPartyAcronym = {}
+        for line in lines:
+            lineSplit = line.replace("\n", "").split(":")
+            partyAcronym = lineSplit[1].strip().split("___")
+            party = partyAcronym[0].strip()
+            acronym = partyAcronym[1].strip()
+            self.dictPartyAcronym[party] = acronym
+    
     def initiationSql(self):
         objOperat = operationFiles(self.tableDb)
         objDisplay = displayQuery('Resultado da pesquisa')
