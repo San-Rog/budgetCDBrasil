@@ -902,7 +902,7 @@ class operationFiles():
     
 class main():
     def __init__(self):
-        global dataSiteCd
+        global dataSiteCd, fileParty
         dataSiteCd = []
         st.session_state[wordKeys[0]] += 1
         self.dirDbZsdtSt = r"C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_chunks_Github"
@@ -912,6 +912,8 @@ class main():
         placeHolder = objDisplay.setHtmlPlace(None)
         objDisplay.setPage(0)
         self.isRunning()
+        fileParty = self.fileParty
+        st.write(fileParty)
         self.fileDbZsdt = "cota_parlamentar_CD_scraping.db.zst"
         self.fileDb = "cota_parlamentar_CD_scraping.db"
         self.tableDb = "gastos_cota_CD"
@@ -923,10 +925,12 @@ class main():
             self.dirDbZsdt = self.dirDbZsdtSt
             fileTxt = r'C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_integration\files_json_zip.txt'
             fileCss = r'C:\Users\ACER\Documents\css\configCotasCd.css'
+            self.fileParty = r'C:\Users\ACER\Documents\css\partys.txt'
         else:
             self.dirDbZsdt = self.dirDbZsdtGit
             fileTxt = r'fileQuotas/files_json_zip.txt'
             fileCss = 'configCotasCd.css'
+            self.fileParty = 'partys.txt'
         with open(fileTxt, 'r', encoding='utf-8') as f:
             readTxt = f.readlines()
         for txt in readTxt:
