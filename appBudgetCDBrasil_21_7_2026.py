@@ -913,7 +913,6 @@ class main():
         objDisplay.setPage(0)
         self.isRunning()
         fileParty = self.fileParty
-        st.write(fileParty)
         self.fileDbZsdt = "cota_parlamentar_CD_scraping.db.zst"
         self.fileDb = "cota_parlamentar_CD_scraping.db"
         self.tableDb = "gastos_cota_CD"
