@@ -1,0 +1,45 @@
+1:AVANTE ___ Avante
+2:CIDADANIA ___ Cidadania
+3:DEM ___ Democratas 
+4:MDB ___ Movimento Democrático Brasileiro
+5:MISSÃO ___ Missão
+6:NOVO ___ Partido Novo
+7:PATRI ___ Patriota
+8:PATRIOTA ___ Patriota
+9:PCdoB ___ Partido Comunista do Brasil
+10:PDT ___ Partido Democrático Trabalhista
+11:PEN ___ Partido Ecológico Nacional
+12:PHS ___ Partido Humanista da Solidariedade
+13:PL ___ Partido Liberal
+14:PMDB ___ Partido do Movimento Democrático Brasileiro
+15:PMN ___  Partido da Mobilização Nacional
+16:PODE ___ Podemos 
+17:PP ___ Progressistas
+18:PP** ___ Progressistas?
+19:PPL ___ Partido Pátria Livre 
+20:PPS ___ Partido Popular Socialista 
+21:PR ___ Partido Republicano
+22:PRB ___ Partido Republicano Brasileiro
+23:PRD ___ Partido Renovação Democrática
+24:PROS ___ Partido Republicano da Ordem Social
+25:PRP ___ Partido Republicano Progressista
+26:PRTB ___ Partido Renovador Trabalhista Brasileiro
+27:PSB ___ Partido Socialista Brasileiro
+28:PSC ___ Partido Social Cristão
+29:PSD ___ Partido Social Democrático
+30:PSDB ___ Partido da Social Democracia Brasileira 
+31:PSDC ___ Partido Social Democrata Cristão
+32:PSL ___ Partido Social Liberal
+33:PSOL ___ Partido Socialismo e Liberdade
+34:PT ___ Partido dos Trabalhadores 
+35:PTB ___ Partido Trabalhista Brasileiro
+36:PTC ___ Partido Trabalhista Comunitário
+37:PTdoB ___ Partido Trabalhista do Brasil
+38:PV ___ Partido Verde
+39:REDE ___ Rede Sustentabilidade
+40:REPUBLICANOS ___ Republicanos
+41:S.PART. ___ sem partido
+42:SDD ___ Solidariedade
+43:SOLIDARIEDADE ___ Solidariedade
+44:UNIÃO ___ União Brasil
+
