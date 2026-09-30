@@ -96,6 +96,15 @@ class acessories():
         except: 
             return self.alphaNum 
     
+    def checkTypeDoc(self): 
+        dictTypeDoc = {'0': 'nota fiscal', '1': 'recibo ou outros', '2': 'documento emitido no exterior', 
+                       '3': 'despesa no parlaSul', '4': 'nota fiscal eletrônica', '5': 'nota fiscal eletrônica'} 
+        try: 
+            partyAcronym = f"{self.alphaNum} ({dictTypeDoc[self.alphaNum]})"
+            return partyAcronym
+        except: 
+            return self.alphaNum         
+        
     def checkCnpjCpf(self): 
         cpf = CPF()
         cnpj = CNPJ()
@@ -283,6 +292,7 @@ class displayQuery():
         self.colsDate = [5, 6, 14]
         self.colsParty = [25]
         self.colState = [26]
+        self.colsTypeNum = [27]
         self.placeText = acessories(None).definePlace()
         objDisplay = displayQuery("").setPage(1)
         for self.s, self.selDf in enumerate(self.allSelDf):
@@ -443,6 +453,9 @@ class displayQuery():
                 elif c in self.colsParty: 
                     newCols[col] = f"*{col}"
                     self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).checkPartyAcronym()}")                
+                elif c in self.colsTypeNum: 
+                    newCols[col] = f"*{col}"
+                    self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).checkTypeDoc()}")  
                 else:
                     newCols[col] = col
         self.dfCopy.rename(columns=newCols, inplace=True)        
@@ -673,7 +686,7 @@ class windowStream():
                          "Vídeo": ["Vídeo", "keyButton_vídeo", ":material/video_library:", "Exibe vídeos sobre o aplicativo."], 
                          "Limpeza": ["Limpeza", "keyButton_limpeza", ":material/cleaning_services:", "Limpa os dados da tela."], 
                          "Saída": ["Saída", "keyButton_saída", ":material/exit_to_app:", "Sai do aplicativo."], 
-                         "Topo": ["Topo", "keyButton_topo", ":material/arrow_circle_up:", "Vai para o topo do aplicativo sem limpar os campos informados."]}
+                         "Topo": ["Topo", "keyButton_topo", ":material/arrow_circle_up:", "Vai para o topo do aplicativo, apaga os lançamentos, mas preserva os campos informados na pesquisa."]}
         barFloat = self.colData.container()
         keyButtFloat = list(dictButtFloat.keys())
         nKeys = len(keyButtFloat)
