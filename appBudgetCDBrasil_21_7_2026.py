@@ -287,7 +287,6 @@ class displayQuery():
         self.cont = 0
         nAllSelDf = len(self.allSelDf)
         self.allSummary = {}
-        #self.lastKey = ""
         self.colsMonet = [2, 4, 3, 21, 23, 24, 30, 31, 32]
         self.colsDate = [5, 6, 14]
         self.colsParty = [25]
@@ -323,10 +322,8 @@ class displayQuery():
                 for url in self.urlDocs:
                     st.subheader(addDf[1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)
                     for u, ur in enumerate(url):
-                        #self.lastKey = f"{self.selDf}_{self.s + 1}_{u+1}"
                         keyDfUrl = f"{self.selDf}_{self.s + 1}_{u+1}"
                         with st.container(border=True, key=keyDfUrl):
-                            scroll_to_element(keyDfUrl)
                             self.cont += u
                             (colDf, ) = st.columns(1, border=False)
                             colDf.markdown(self.exprDf)
@@ -367,7 +364,33 @@ class displayQuery():
                                 audData = self.createAudVoice(textAud) 
                                 colAudUrl.audio(audData.getvalue(), format="audio/wav", width="stretch")
             self.colData.space(size="small")
-        #scroll_to_element(self.lastKey)
+        keyDfAll = f"{self.cont}_all"
+        with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
+                                    vertical_alignment="center", key=keyDfAll): 
+            st.subheader(addDf[-1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)                   
+            df = pd.DataFrame(self.allSummary)  
+            keysSumm = list(self.allSummary.keys())
+            for k, key in enumerate(keysSumm):
+                match k: 
+                    case 1: 
+                        nDf = len(self.allSummary[key])
+                    case 2:
+                        qLanc = sum(self.allSummary[key])
+                    case 3:
+                        sumVal = sum(self.allSummary[key])
+            colDetailAll, colLiqAll = st.columns(self.colTwo, border=False)
+            addLanc = "lançamento" if nDf <= 1 else "lançamentos"
+            exprLancUrAll = f":material/topic: :red[**{acessories(nDf).convertNumber(0)}**] _{addLanc}_"
+            exprLiqUrAll = f":material/money_bag: _despesa líquida global de_ :red[**R$ {acessories(sumVal).convertNumber(1)}**]"
+            exprLiqUrAll += f" (:blue[{(acessories(sumVal).convertNumExt()).lower()}])"
+            colDetailAll.markdown(exprLancUrAll)
+            colLiqAll.markdown(exprLiqUrAll)
+            self.sumValues()
+            self.seqNums = [2, 3]
+            self.cols = self.colsSummary
+            self.df = df
+            self.sumValues()
+            st.dataframe(data=self.df, width="stretch", hide_index=True)
         
     def calcSumAll(self):
         cotas = [result for result in self.results if result[15] == self.selDf]
@@ -682,11 +705,12 @@ class windowStream():
         self.fixedBar()
         
     def fixedBar(self):
-        dictButtFloat = {"Info": ["Informações", "keyButton_info", ":material/info:", "Dá mais informações sobre o aplicativo."], 
-                         "Vídeo": ["Vídeo", "keyButton_vídeo", ":material/video_library:", "Exibe vídeos sobre o aplicativo."], 
+        dictButtFloat = {"Informações": ["Informações", "keyButton_info", ":material/info:", "Dá mais informações sobre o aplicativo."], 
+                         "Vídeos": ["Vídeos", "keyButton_vídeo", ":material/video_library:", "Exibe vídeos sobre o aplicativo."], 
+                         "Links": ["Links", "keyButton_links", ":material/dataset_linked:", "Exibe links úteis associados ao aplicativo."], 
                          "Limpeza": ["Limpeza", "keyButton_limpeza", ":material/cleaning_services:", "Limpa os dados da tela."], 
-                         "Saída": ["Saída", "keyButton_saída", ":material/exit_to_app:", "Sai do aplicativo."], 
-                         "Topo": ["Topo", "keyButton_topo", ":material/arrow_circle_up:", "Vai para o topo do aplicativo, apaga os lançamentos, mas preserva os campos informados na pesquisa."]}
+                         "Saída": ["Saída", "keyButton_saída", ":material/exit_to_app:", "Sai do aplicativo."] 
+                         }
         barFloat = self.colData.container()
         keyButtFloat = list(dictButtFloat.keys())
         nKeys = len(keyButtFloat)
@@ -706,16 +730,15 @@ class windowStream():
                 pass
             case 1:
                 pass
-            case 2:
+            case 2: 
+                pass
+            case 3:
                 dictVal = helpPlace[1]
                 scroll_to_element(wordKeys[dictVal[3]])
                 st.session_state[wordKeys[5]] = None
-            case 3:
+            case 4:
                 st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.mozilla.org/pt-BR/'" />
                             """, unsafe_allow_html=True)
-            case 4:
-                dictVal = helpPlace[1]
-                scroll_to_element(wordKeys[dictVal[3]])
     
     def checkButton(self, value):
         match value:
