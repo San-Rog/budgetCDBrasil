@@ -390,6 +390,8 @@ class displayQuery():
             self.cols = self.colsSummary
             self.df = df
             self.sumValues()
+            if self.categ != 0:
+                self.df[self.colsSummary[-1]] = self.df[self.colsSummary[-1]].apply(lambda val: f"{acessories(val).convertNumber(2)}")
             st.dataframe(data=self.df, width="stretch", hide_index=True)
         
     def calcSumAll(self):
