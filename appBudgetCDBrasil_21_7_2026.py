@@ -4,6 +4,7 @@ import time
 import segno
 import httpx
 import locale
+import base64
 import psutil
 import sqlite3
 import asyncio
@@ -21,6 +22,9 @@ from validate_docbr import CPF, CNPJ
 from brutils.currency import format_currency
 from brutils import convert_real_to_text
 from brutils.ibge.uf import convert_uf_to_name
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.print_page_options import PrintOptions
 from streamlit_extras.scroll_to_element import *
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
@@ -350,7 +354,9 @@ class displayQuery():
                                     if pdfBytes.startswith(b'%PDF-'):
                                         st.markdown(f":material/document_scanner: _documento baixado_") 
                                     else:
-                                        st.markdown(f":material/skull: _documento não baixável de forma direta em virtude de captcha ou abas dependentes de comandos do usuário {addRec}")
+                                        pdfBytes = operationFiles(None).seleniumImg(url)
+                                        if pdfBytes != "":
+                                            st.markdown(f":material/document_scanner: _documento baixado_")
                                     st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{self.cont}")
                                 except Exception as e:
                                     eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
@@ -379,8 +385,8 @@ class displayQuery():
                     case 3:
                         sumVal = sum(self.allSummary[key])
             colDetailAll, colLiqAll = st.columns(self.colTwo, border=False)
-            addLanc = "lançamento" if nDf <= 1 else "lançamentos"
-            exprLancUrAll = f":material/topic: :red[**{acessories(nDf).convertNumber(0)}**] _{addLanc}_"
+            addDf = "deputado(a) federal" if nDf <= 1 else "deputados(as) federais"
+            exprLancUrAll = f":material/topic: :red[**{acessories(nDf).convertNumber(0)}**] _{addDf}_"
             exprLiqUrAll = f":material/money_bag: _despesa líquida global de_ :red[**R$ {acessories(sumVal).convertNumber(1)}**]"
             exprLiqUrAll += f" (:blue[{(acessories(sumVal).convertNumExt()).lower()}])"
             colDetailAll.markdown(exprLancUrAll)
@@ -420,11 +426,12 @@ class displayQuery():
         for w in self.seqNums:
             try:
                 df[self.cols[w]] = df[self.cols[w]].astype(float)
-                df[self.cols[w]] = df[self.cols[w]].round(2)
             except:
                 df[self.cols[w]] = df[self.cols[w]].fillna(0)
-                df[self.cols[w]] = df[self.cols[w]].round(2)
-            totalSum = df[self.cols[w]].sum()
+            try:
+                totalSum = df[self.cols[w]].sum()
+            except:
+                totalSum = 0
             try:
                 if int(totalSum) == 0:
                     totalSum = 0
@@ -549,7 +556,6 @@ class displayQuery():
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
-        #self.sqlCols, self.sqlFilters, self.fileDb, self.tableDb
         self.cols = cols
         self.filters = filters
         self.keys = sorted(list(filters.keys()))
@@ -561,9 +567,8 @@ class windowStream():
         
     def insertWidget(self):
         nSize = 4
-        #st.space()
-        #st.subheader(":green[**Gastos da Câmara Federal - cota parlamentar**]", help="Mostra os gastos de deputados federais com a cota parlamentar.", 
-        #             icon=":material/payments:", width="stretch", text_alignment="center", anchor=None)
+        st.markdown (":material/payments: :green[**Gastos da Câmara Federal - cota parlamentar**]", help="Mostra os gastos de deputados federais com a cota parlamentar.", 
+                     width="stretch", text_alignment="center")
         colStart, colEnd, colUf, colDf = st.columns([nSize*3, nSize*3, nSize*1.9, nSize**2], vertical_alignment="center", 
                                                      width="stretch")
         self.indMonths = [w + 1 for w in range(len(self.optMonthsAll))]
@@ -906,9 +911,9 @@ class operationFiles():
         monthsDict = {}
         allMonthStart = indMonths[indStart:]
         monthsDict[yearStart] = allMonthStart
-        allMonthEnd = indMonths[:indEnd+1]
+        allMonthEnd = indMonths[:indEnd]
         monthsDict[yearEnd] = allMonthEnd
-        noYears = [year for year in list(range(yearStart, yearEnd))if year != yearStart and year != yearEnd] 
+        noYears = [year for year in list(range(yearStart, yearEnd)) if year != yearStart and year != yearEnd] 
         for year in noYears: 
             monthsDict[year] = indMonths
         yearKeys = sorted(list(monthsDict.keys()))
@@ -947,7 +952,27 @@ class operationFiles():
                     if attempt == maxRetries:
                         raise e
                     await asyncio.sleep(delay)
-                    delay *= 2  
+                    delay *= 1.5  
+                    
+    @st.cache_data(show_spinner=False)
+    def seleniumImg(_self, urlDown): 
+        try:
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")  
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            driver = webdriver.Chrome(options=chrome_options)
+            driver.get(urlDown)
+            print_options = PrintOptions()
+            print_options.orientation = "portrait"
+            print_options.background = True  
+            pdf_base64 = driver.print_page(print_options=print_options)
+            pdf_bytes = base64.b64decode(pdf_base64)
+            return pdf_bytes
+        except:
+            return "" 
+        finally:
+            driver.quit()
     
 class main():
     def __init__(self):
