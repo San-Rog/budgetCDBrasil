@@ -12,3 +12,4 @@ streamlit_extras
 streamlit_float 
 validate_docbr
 selenium
+pymupdf
