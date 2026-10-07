@@ -561,9 +561,9 @@ class displayQuery():
             st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.google.com'" />
                         """, unsafe_allow_html=True) 
     
-    @st.dialog(title=':material/folder_zip: Cópia para pasta download', width="small", icon=":material/error:", on_dismiss="ignore") 
+    @st.dialog(title='Cópia para pasta _download_', width="small", icon=":material/file_copy:", 
+               on_dismiss="ignore") 
     def copyFile(_self):
-        #self.selDf, contUs.replace('/', '_'), month, year, code, num, df, pdfBytes
         dctData = st.session_state[wordKeys[14]]
         nData = len(dctData)
         if nData == 0:
@@ -578,14 +578,16 @@ class displayQuery():
                 dctPdfBytes.append({"df": values[0], "name": valuesName, "bytes": valueBytes})
             ziPdfs, textPdfs = operationFiles(None).saveDownPdf(dctPdfBytes)
             st.markdown(textPdfs, unsafe_allow_html=True)
-            colEmptyOne, colButtDown, colEmptyTwo = st.columns([1.5, 6, 1.5], vertical_alignment="center")
+            colEmptyOne, colButtDown, colEmptyTwo = st.columns([1.5, 6, 1.5], vertical_alignment="center", 
+                                                               width="stretch")
             if ziPdfs: 
                 colButtDown.download_button(
-                    label=":material/download: download dos comprovantes",
+                    label=":material/folder_zip: arquivo ZIP",
                     data=ziPdfs,
                     file_name="arquivos_app_cd.zip",
                     mime="application/zip",
-                    key="keyButton_zip"
+                    key="keyButton_zip", 
+                    width="stretch"
                 )
 
 class windowStream():
