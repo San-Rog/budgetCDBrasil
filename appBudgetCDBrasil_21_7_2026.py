@@ -1,5 +1,6 @@
 import os
 import io
+import re
 import time
 import segno
 import httpx
@@ -7,6 +8,7 @@ import locale
 import base64
 import psutil
 import sqlite3
+import zipfile
 import asyncio
 import calendar
 import pandas as pd
@@ -52,7 +54,6 @@ class acessories():
         return extensive
         
     def convertLegis(self): 
-        #chrome-extension://oemmndcbldboiebfnladdacbdfmadadm/https://www25.senado.leg.br/documents/130884256/132289867/TABELA+DE+LEGISLATURAS.pdf/afe38c27-4685-4d78-b1d0-7fdacb93b689
         dictLegis = {"53": ["01/02/2007", "31/01/2011"], "54": ["01/02/2011", "31/01/2015"], 
                      "55": ["01/02/2015", "31/01/2019"], "56": ["01/02/2019", "31/01/2023"], 
                      "57": ["01/02/2023", "31/01/2027"]}
@@ -287,7 +288,7 @@ class displayQuery():
             self.textAud += f"{dctText} = {audJoin}"
     
     def screenLaunch(self):
-        self.allDfs = []
+        self.allDfs = {}
         self.cont = 0
         nAllSelDf = len(self.allSelDf)
         self.allSummary = {}
@@ -321,8 +322,7 @@ class displayQuery():
                             self.dfOrig = self.df
                             self.configDataFrame()
                             st.dataframe(data=self.dfCopy, width="stretch", hide_index=True)
-                    if self.nSelDf > 1:
-                        self.allDfs.append(self.df)
+                    self.allDfs[self.selDf] = self.df
                 for url in self.urlDocs:
                     st.subheader(addDf[1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)
                     for u, ur in enumerate(url):
@@ -331,14 +331,15 @@ class displayQuery():
                             self.cont += u
                             (colDf, ) = st.columns(1, border=False)
                             colDf.markdown(self.exprDf)
+                            contUs = f"{u+1}/{self.nLanc}"
                             colDetail, colLiq = st.columns(self.colTwo, border=False)
-                            exprLancUr = f":material/tag: _lançamento_ :red[**{u+1}/{self.nLanc}**]"
+                            exprLancUr = f":material/tag: _lançamento_ :red[**{contUs}**]"
                             valReal = self.newCotas[u][-1]
                             exprLiqUr = f":material/money_bag: _despesa líquida parcial de_ :red[**R$ {acessories(valReal).convertNumber(1)}**]"
                             exprLiqUr += f" (:blue[{(acessories(valReal).convertNumExt()).lower()}])"
                             colDetail.markdown(exprLancUr)
                             colLiq.markdown(exprLiqUr)
-                            url = ur[29]
+                            year, code, month, num, url = [ur[1], ur[2], ur[14], ur[16], ur[29]]
                             if self.categ == 0:
                                 st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
                             else:
@@ -357,6 +358,9 @@ class displayQuery():
                                         pdfBytes = operationFiles(None).seleniumImg(url)
                                         if pdfBytes != "":
                                             st.markdown(f":material/document_scanner: _documento baixado_")
+                                    st.session_state[wordKeys[14]].setdefault(url, [])
+                                    comboUrl = (self.selDf, contUs.replace('/', '_'), month, year, code, num, self.df.iloc[[u]], pdfBytes) 
+                                    st.session_state[wordKeys[14]][url].append(comboUrl)
                                     st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{self.cont}")
                                 except Exception as e:
                                     eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
@@ -391,14 +395,17 @@ class displayQuery():
             exprLiqUrAll += f" (:blue[{(acessories(sumVal).convertNumExt()).lower()}])"
             colDetailAll.markdown(exprLancUrAll)
             colLiqAll.markdown(exprLiqUrAll)
+            self.dfCopy = self.df
             self.sumValues()
             self.seqNums = [2, 3]
+            self.colsCopy = self.cols
             self.cols = self.colsSummary
             self.df = df
             self.sumValues()
             if self.categ != 0:
                 self.df[self.colsSummary[-1]] = self.df[self.colsSummary[-1]].apply(lambda val: f"{acessories(val).convertNumber(2)}")
             st.dataframe(data=self.df, width="stretch", hide_index=True)
+            displayQuery('Download de comprovantes').copyFile()
         
     def calcSumAll(self):
         cotas = [result for result in self.results if result[15] == self.selDf]
@@ -552,7 +559,34 @@ class displayQuery():
         buttClose = st.button(label="Fechar", key="keyButton_close", icon=":material/disabled_by_default:")
         if buttClose:
             st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.google.com'" />
-                        """, unsafe_allow_html=True)          
+                        """, unsafe_allow_html=True) 
+    
+    @st.dialog(title=':material/folder_zip: Cópia para pasta download', width="small", icon=":material/error:", on_dismiss="ignore") 
+    def copyFile(_self):
+        #self.selDf, contUs.replace('/', '_'), month, year, code, num, df, pdfBytes
+        dctData = st.session_state[wordKeys[14]]
+        nData = len(dctData)
+        if nData == 0:
+            st.markdown("Não há documentos para download.")
+        else:
+            dctPdfBytes = []
+            for dct, data in dctData.items(): 
+                values = data[0]
+                valuesOrig = [re.sub(r"[^\w\s]", "", value) for value in values[:-2]]
+                valuesName = "_".join(valuesOrig) + ".pdf"
+                valueBytes = values[-1]
+                dctPdfBytes.append({"df": values[0], "name": valuesName, "bytes": valueBytes})
+            ziPdfs, textPdfs = operationFiles(None).saveDownPdf(dctPdfBytes)
+            st.markdown(textPdfs, unsafe_allow_html=True)
+            colEmptyOne, colButtDown, colEmptyTwo = st.columns([1.5, 6, 1.5], vertical_alignment="center")
+            if ziPdfs: 
+                colButtDown.download_button(
+                    label=":material/download: download dos comprovantes",
+                    data=ziPdfs,
+                    file_name="arquivos_app_cd.zip",
+                    mime="application/zip",
+                    key="keyButton_zip"
+                )
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
@@ -954,7 +988,7 @@ class operationFiles():
                     await asyncio.sleep(delay)
                     delay *= 1.5  
                     
-    @st.cache_data(show_spinner=False)
+    @st.cache_data(show_spinner=False, ttl=30, max_entries=15)
     def seleniumImg(_self, urlDown): 
         try:
             chrome_options = Options()
@@ -973,6 +1007,28 @@ class operationFiles():
             return "" 
         finally:
             driver.quit()
+    
+    @st.cache_data(show_spinner=False, ttl=30, max_entries=15)
+    def saveDownPdf(_self, files): 
+        try:
+            fileCount = {}
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                for file in files:
+                    nameDf = file["df"]
+                    nameFile = file["name"]
+                    fileBytes = file["bytes"]
+                    fileCount.setdefault(nameDf, 0)
+                    fileCount[nameDf] += 1
+                    zip_file.writestr(nameFile, fileBytes)
+            buffer.seek(0)
+            textCount = ''
+            for file, count in fileCount.items(): 
+               textCount += f":material/person: {count} comprovante(s) do deputado(a) federal {file}<br>"
+            return(buffer, textCount)
+        except Exception as error:
+            st.write(f"error = {error}")
+            return ""        
     
 class main():
     def __init__(self):
@@ -1060,7 +1116,7 @@ if __name__ == '__main__':
     textPlaceAll = ["Executando rotinas do app. Aguarde..."]    
     wordKeys = ['count', 'enableMonthStart', 'enableYearEnd', 'enableMonthEnd', 
                 'enableUfs', 'valYearStart', 'valMonthStart', 'valYearEnd', 'valMonthEnd', 
-                'valUf', 'valDf', 'countSearch', 'allFillters', 'lastKey']
+                'valUf', 'valDf', 'countSearch', 'allFillters', 'lastKey', 'allPdfBytes']
     for w, wordKey in enumerate(wordKeys):
         if w == 0:
             val = 0
@@ -1072,8 +1128,10 @@ if __name__ == '__main__':
             val = []
         elif w == 11:
             val = 0
-        else:
+        elif w == 13:
             val = ""
+        else:
+            val = {}
         if wordKey not in st.session_state:
             st.session_state[wordKey] = val
     seps = ["***", "&&&"]
