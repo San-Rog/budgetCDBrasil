@@ -351,13 +351,14 @@ class displayQuery():
                             else:
                                 addRec = "(:red[recomenda-se verificação usando as opções _link_ ou _qrcode_ abaixo])"
                                 try:
+                                    helpButt = "Posicione o mouse sobre a imagem, clicando com o botão direito para copiá-la ou salvá-la."
                                     pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
                                     if pdfBytes.startswith(b'%PDF-'):
-                                        st.markdown(f":material/document_scanner: _documento baixado_") 
+                                        st.markdown(f":material/document_scanner: _documento baixado_", help=helpButt) 
                                     else:
                                         pdfBytes = operationFiles(None).seleniumImg(url)
                                         if pdfBytes != "":
-                                            st.markdown(f":material/document_scanner: _documento baixado_")
+                                            st.markdown(f":material/document_scanner: _documento baixado_", help=helpButt)
                                     st.session_state[wordKeys[14]].setdefault(url, [])
                                     comboUrl = (self.selDf, contUs.replace('/', '_'), month, year, code, num, self.df.iloc[[u]], pdfBytes) 
                                     st.session_state[wordKeys[14]][url].append(comboUrl)
@@ -414,7 +415,7 @@ class displayQuery():
         self.urlDocs = []
         for c, cota in enumerate(cotas):
             newCota = list(cota)
-            newCota[0] = f"{acessories(c+1).convertNumber(0)}/{nCotas}"
+            newCota[0] = f"{acessories(c+1).convertNumber(0)}/{acessories(nCotas).convertNumber(0)}"
             self.newCotas.append(newCota)
             self.cont += 1
         self.cols[0] = "#"
@@ -581,14 +582,16 @@ class displayQuery():
             colEmptyOne, colButtDown, colEmptyTwo = st.columns([1.5, 6, 1.5], vertical_alignment="center", 
                                                                width="stretch")
             if ziPdfs: 
+                now = datetime.now()
+                nowStr = now.strftime("%d_%m_%Y_%d_%H_%M_%S")
+                nameZip = f"arquivos_app_cd.zip_{nowStr}.zip"
                 colButtDown.download_button(
-                    label=":material/folder_zip: arquivo ZIP",
-                    data=ziPdfs,
-                    file_name="arquivos_app_cd.zip",
-                    mime="application/zip",
-                    key="keyButton_zip", 
-                    width="stretch"
-                )
+                        label=":material/folder_zip: arquivo ZIP",
+                        data=ziPdfs,
+                        file_name=nameZip,
+                        mime="application/zip",
+                        key="keyButton_zip", 
+                        width="stretch")
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
@@ -1025,11 +1028,15 @@ class operationFiles():
                     zip_file.writestr(nameFile, fileBytes)
             buffer.seek(0)
             textCount = ''
+            allCount = 0
             for file, count in fileCount.items(): 
-               textCount += f":material/person: {count} comprovante(s) do deputado(a) federal {file}<br>"
+                addCount = "comprovante" if count <= 1 else "comprovantes"
+                textCount += f":material/person: {acessories(count).convertNumber(0)} {addCount} do deputado(a) federal {file}<br>"
+                allCount += count
+            addAllCount = "comprovante" if count <= 1 else "comprovantes"
+            textCount += f":material/functions: {acessories(allCount).convertNumber(0)} {addAllCount} (total)<br>"   
             return(buffer, textCount)
-        except Exception as error:
-            st.write(f"error = {error}")
+        except:
             return ""        
     
 class main():
