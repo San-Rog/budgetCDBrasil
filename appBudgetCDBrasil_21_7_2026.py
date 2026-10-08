@@ -562,7 +562,7 @@ class displayQuery():
             st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.google.com'" />
                         """, unsafe_allow_html=True) 
     
-    @st.dialog(title='Cópia para pasta _download_', width="small", icon=":material/file_copy:", 
+    @st.dialog(title='Cópia para pasta _download_', width="medium", icon=":material/file_copy:", 
                on_dismiss="ignore") 
     def copyFile(_self):
         dctData = st.session_state[wordKeys[14]]
@@ -584,14 +584,15 @@ class displayQuery():
             if ziPdfs: 
                 now = datetime.now()
                 nowStr = now.strftime("%d_%m_%Y_%d_%H_%M_%S")
-                nameZip = f"arquivos_app_cd.zip_{nowStr}.zip"
+                nameZip = f"app_cotas_cd_{nowStr}.zip"
                 colButtDown.download_button(
-                        label=":material/folder_zip: arquivo ZIP",
+                        label=f":material/folder_zip: {nameZip}",
                         data=ziPdfs,
                         file_name=nameZip,
                         mime="application/zip",
                         key="keyButton_zip", 
-                        width="stretch")
+                        width="stretch", 
+                        help=f"Gravará em sua pasta donwloads o arquivo zipado abaixo.")
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
