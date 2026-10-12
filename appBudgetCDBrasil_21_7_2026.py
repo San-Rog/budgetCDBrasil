@@ -351,14 +351,15 @@ class displayQuery():
                             else:
                                 addRec = "(:red[recomenda-se verificação usando as opções _link_ ou _qrcode_ abaixo])"
                                 try:
-                                    helpButt = "Posicione o mouse sobre a imagem, clicando com o botão direito para copiá-la ou salvá-la."
+                                    helpButt = "Caso não apareça documento algum, tente baixá-lo usando o link ou o qrCode abaixo. " \
+                                               "Caso apareça, posicione o mouse sobre a imagem, clicando com o botão direito para copiá-la ou salvá-la."
                                     pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
                                     if pdfBytes.startswith(b'%PDF-'):
                                         st.markdown(f":material/document_scanner: _documento baixado_", help=helpButt) 
                                     else:
                                         pdfBytes = operationFiles(None).seleniumImg(url)
                                         if pdfBytes != "":
-                                            st.markdown(f":material/document_scanner: _documento baixado_", help=helpButt)
+                                            st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
                                     st.session_state[wordKeys[14]].setdefault(url, [])
                                     comboUrl = (self.selDf, contUs.replace('/', '_'), month, year, code, num, self.df.iloc[[u]], pdfBytes) 
                                     st.session_state[wordKeys[14]][url].append(comboUrl)
