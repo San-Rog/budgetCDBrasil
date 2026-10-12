@@ -593,7 +593,7 @@ class displayQuery():
                         mime="application/zip",
                         key="keyButton_zip", 
                         width="stretch", 
-                        help=f"Gravará em sua pasta donwloads o arquivo zipado abaixo.")
+                        help=f"Gravará em sua pasta donwloads o arquivo zipado abaixo, incluindo comprovantes válidos ou telas de alerta/erro em formato PDF.")
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
