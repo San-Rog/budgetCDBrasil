@@ -354,12 +354,13 @@ class displayQuery():
                                     helpButt = "Caso não apareça documento algum, tente baixá-lo usando o link ou o qrCode abaixo. " \
                                                "Caso apareça, posicione o mouse sobre a imagem, clicando com o botão direito para copiá-la ou salvá-la."
                                     pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
+                                    addDoc = "_documento baixado (ou imagem gerada)_"
                                     if pdfBytes.startswith(b'%PDF-'):
-                                        st.markdown(f":material/document_scanner: _documento baixado_", help=helpButt) 
+                                        st.markdown(f":material/document_scanner: {addDoc}", help=helpButt) 
                                     else:
                                         pdfBytes = operationFiles(None).seleniumImg(url)
                                         if pdfBytes != "":
-                                            st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
+                                            st.markdown(f":material/document_scanner: {addDoc}", help=helpButt)
                                     st.session_state[wordKeys[14]].setdefault(url, [])
                                     comboUrl = (self.selDf, contUs.replace('/', '_'), month, year, code, num, self.df.iloc[[u]], pdfBytes) 
                                     st.session_state[wordKeys[14]][url].append(comboUrl)
