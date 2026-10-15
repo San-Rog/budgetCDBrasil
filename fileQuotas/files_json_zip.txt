@@ -1,0 +1,20 @@
+https://dadosabertos.camara.leg.br/swagger/api.html?tab=staticfile
+https://www.camara.leg.br/cotas/Ano-2008.json.zip &&& Ano-2008.json.zip &&& 15/10/2026, 07:58:01 &&& 15/10/2026,07:58:01 &&& 0.01MB
+https://www.camara.leg.br/cotas/Ano-2009.json.zip &&& Ano-2009.json.zip &&& 15/10/2026, 07:57:59 &&& 15/10/2026,07:58:01 &&& 6.72MB
+https://www.camara.leg.br/cotas/Ano-2010.json.zip &&& Ano-2010.json.zip &&& 15/10/2026, 07:57:58 &&& 15/10/2026,07:57:59 &&& 7.85MB
+https://www.camara.leg.br/cotas/Ano-2011.json.zip &&& Ano-2011.json.zip &&& 15/10/2026, 07:57:55 &&& 15/10/2026,07:57:57 &&& 8.77MB
+https://www.camara.leg.br/cotas/Ano-2012.json.zip &&& Ano-2012.json.zip &&& 15/10/2026, 07:57:54 &&& 15/10/2026,07:57:55 &&& 7.96MB
+https://www.camara.leg.br/cotas/Ano-2013.json.zip &&& Ano-2013.json.zip &&& 15/10/2026, 07:57:52 &&& 15/10/2026,07:57:54 &&& 9.57MB
+https://www.camara.leg.br/cotas/Ano-2014.json.zip &&& Ano-2014.json.zip &&& 15/10/2026, 07:57:50 &&& 15/10/2026,07:57:52 &&& 9.49MB
+https://www.camara.leg.br/cotas/Ano-2015.json.zip &&& Ano-2015.json.zip &&& 15/10/2026, 07:57:48 &&& 15/10/2026,07:57:50 &&& 11.63MB
+https://www.camara.leg.br/cotas/Ano-2016.json.zip &&& Ano-2016.json.zip &&& 15/10/2026, 07:57:46 &&& 15/10/2026,07:57:48 &&& 10.94MB
+https://www.camara.leg.br/cotas/Ano-2017.json.zip &&& Ano-2017.json.zip &&& 15/10/2026, 07:57:44 &&& 15/10/2026,07:57:46 &&& 10.64MB
+https://www.camara.leg.br/cotas/Ano-2018.json.zip &&& Ano-2018.json.zip &&& 15/10/2026, 07:57:43 &&& 15/10/2026,07:57:44 &&& 8.94MB
+https://www.camara.leg.br/cotas/Ano-2019.json.zip &&& Ano-2019.json.zip &&& 15/10/2026, 07:57:41 &&& 15/10/2026,07:57:43 &&& 9.27MB
+https://www.camara.leg.br/cotas/Ano-2020.json.zip &&& Ano-2020.json.zip &&& 15/10/2026, 07:57:39 &&& 15/10/2026,07:57:41 &&& 5.54MB
+https://www.camara.leg.br/cotas/Ano-2021.json.zip &&& Ano-2021.json.zip &&& 15/10/2026, 07:57:35 &&& 15/10/2026,07:57:39 &&& 6.64MB
+https://www.camara.leg.br/cotas/Ano-2022.json.zip &&& Ano-2022.json.zip &&& 15/10/2026, 07:57:33 &&& 15/10/2026,07:57:35 &&& 6.37MB
+https://www.camara.leg.br/cotas/Ano-2023.json.zip &&& Ano-2023.json.zip &&& 15/10/2026, 07:57:32 &&& 15/10/2026,07:57:33 &&& 7.44MB
+https://www.camara.leg.br/cotas/Ano-2024.json.zip &&& Ano-2024.json.zip &&& 15/10/2026, 07:57:30 &&& 15/10/2026,07:57:32 &&& 7.45MB
+https://www.camara.leg.br/cotas/Ano-2025.json.zip &&& Ano-2025.json.zip &&& 15/10/2026, 07:57:27 &&& 15/10/2026,07:57:30 &&& 7.29MB
+https://www.camara.leg.br/cotas/Ano-2026.json.zip &&& Ano-2026.json.zip &&& 15/10/2026, 07:57:26 &&& 15/10/2026,07:57:27 &&& 5.19MB
