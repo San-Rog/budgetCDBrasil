@@ -1004,7 +1004,8 @@ class operationFiles():
             chrome_options.add_argument("--no-sandbox")
             chrome_options.add_argument("--disable-dev-shm-usage")
             driver = webdriver.Chrome(options=chrome_options)
-            driver.get(urlDown)            
+            driver.get(urlDown)   
+            time.sleep(10)
             print_options = PrintOptions()
             print_options.orientation = "portrait"
             print_options.background = True  
