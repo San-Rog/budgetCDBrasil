@@ -354,13 +354,16 @@ class displayQuery():
                                     helpButt = "Caso não apareça documento algum, tente baixá-lo usando o link ou o qrCode abaixo. " \
                                                "Caso apareça, posicione o mouse sobre a imagem, clicando com o botão direito para copiá-la ou salvá-la."
                                     pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
-                                    addDoc = "_documento baixado (ou imagem gerada)_"
                                     if pdfBytes.startswith(b'%PDF-'):
-                                        st.markdown(f":material/document_scanner: {addDoc}", help=helpButt) 
+                                        st.markdown(f":material/document_scanner: _documento baixado_", help=helpButt) 
                                     else:
-                                        pdfBytes = operationFiles(None).seleniumImg(url)
+                                        pdfBytes = operationFiles(None).seleniumImgPdf(url)
                                         if pdfBytes != "":
-                                            st.markdown(f":material/document_scanner: {addDoc}", help=helpButt)
+                                            st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
+                                        else: 
+                                            pdfBytes = operationFiles(None).seleniumRendPdf(url)
+                                            if pdfBytes != "":
+                                                st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
                                     st.session_state[wordKeys[14]].setdefault(url, [])
                                     comboUrl = (self.selDf, contUs.replace('/', '_'), month, year, code, num, self.df.iloc[[u]], pdfBytes) 
                                     st.session_state[wordKeys[14]][url].append(comboUrl)
@@ -594,7 +597,7 @@ class displayQuery():
                         mime="application/zip",
                         key="keyButton_zip", 
                         width="stretch", 
-                        help=f"Gravará em sua pasta donwloads o arquivo zipado abaixo, incluindo comprovantes válidos ou telas de alerta/erro em formato PDF.")
+                        help=f"Gravará em sua pasta donwloads o arquivo zipado abaixo.")
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
@@ -997,20 +1000,57 @@ class operationFiles():
                     delay *= 1.5  
                     
     @st.cache_data(show_spinner=False, ttl=30, max_entries=15)
-    def seleniumImg(_self, urlDown): 
+    def seleniumImgPdf(_self, urlDown): 
         try:
             chrome_options = Options()
             chrome_options.add_argument("--headless")  
             chrome_options.add_argument("--no-sandbox")
             chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--disable-gpu")
             driver = webdriver.Chrome(options=chrome_options)
             driver.get(urlDown)
             print_options = PrintOptions()
             print_options.orientation = "portrait"
             print_options.background = True  
-            pdf_base64 = driver.print_page(print_options=print_options)
-            pdf_bytes = base64.b64decode(pdf_base64)
-            return pdf_bytes
+            pdfBase64 = driver.print_page(print_options=print_options)
+            pdfBytes = base64.b64decode(pdfBase64)
+            return pdfBytes
+        except:
+            return "" 
+        finally:
+            driver.quit()
+            
+    @st.cache_data(show_spinner=False, ttl=30, max_entries=15)
+    def seleniumRendPdf(_self, urlDown): 
+        try:
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")  
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--disable-gpu")
+            settings = {
+                    "recentDestinations": [{
+                        "id": "Save as PDF",
+                        "origin": "local",
+                        "account": ""
+                    }],
+                    "selectedDestinationId": "Save as PDF",
+                    "version": 2,
+                    "isHeaderFooterEnabled": False, 
+                    "isLandscapeEnabled": False     
+            }
+            chrome_options.add_argument(f'--kiosk-printing')
+            driver = webdriver.Chrome(options=chrome_options)
+            driver.get(url)
+            print_options = {
+                    'landscape': False,
+                    'displayHeaderFooter': False,
+                    'printBackground': True, 
+                    'preferCSSPageSize': True
+            }
+            result = driver.execute_cdp_cmd("Page.printToPDF", print_options)
+            pdfBytes = base64.b64decode(result['data'])            
+            return pdfBytes
         except:
             return "" 
         finally:
