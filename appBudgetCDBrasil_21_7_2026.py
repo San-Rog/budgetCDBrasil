@@ -1005,6 +1005,7 @@ class operationFiles():
             chrome_options.add_argument("--disable-dev-shm-usage")
             driver = webdriver.Chrome(options=chrome_options)
             driver.get(urlDown)
+            time.sleep(4)
             print_options = PrintOptions()
             print_options.orientation = "portrait"
             print_options.background = True  
