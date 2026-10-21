@@ -274,9 +274,12 @@ class displayQuery():
             byteImg = acessories(linkOrig).createQrCode(2)
             colQrOrig.image(byteImg, width="content", link=linkOrig)
             textAud = f"Para acessar o site oficial, dê um clique no link {linkOrig} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
-            audData = self.createAudVoice(textAud) 
-            colAudOrig.audio(audData.getvalue(), format="audio/wav", width="stretch")
-    
+            try:
+                audData = self.createAudVoice(textAud) 
+                colAudOrig.audio(audData.getvalue(), format="audio/wav", width="stretch")
+            except: 
+                pass
+                
     def dictCols(self):
         self.dictTextAud = {}
         for n, newCol in enumerate(self.newCols): 
@@ -378,8 +381,11 @@ class displayQuery():
                                 byteImg = acessories(url).createQrCode(2)
                                 colQrUrl.image(byteImg, width="content", link=url)
                                 textAud = f"Para tentar fazer download, dê um clique no link {url} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
-                                audData = self.createAudVoice(textAud) 
-                                colAudUrl.audio(audData.getvalue(), format="audio/wav", width="stretch")
+                                try:
+                                    audData = self.createAudVoice(textAud) 
+                                    colAudUrl.audio(audData.getvalue(), format="audio/wav", width="stretch")
+                                except: 
+                                    pass
             self.colData.space(size="small")
         keyDfAll = f"{self.cont}_all"
         with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
