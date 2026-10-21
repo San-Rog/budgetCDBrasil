@@ -233,7 +233,7 @@ class displayQuery():
         nSelDf = len(allSelDf)
         numStr = f"{nSelDf} deputado federal" if nSelDf <= 1 else f"{nSelDf} deputados federais" 
         self.nSelDf = nSelDf
-        self.colThree = [7, 2, 4]
+        self.colTwoOne = [20, 4]
         self.colTwoTwo = [20, 4]
         self.colTwo = [4, 10]
         self.allSelDf, self.colData, self.start, self.end = (allSelDf, colData, start, end)
@@ -267,18 +267,13 @@ class displayQuery():
                                 )
                             }, hide_index=True) 
             st.space(size="small")
-            colOrig, colQrOrig, colAudOrig = st.columns(self.colThree, vertical_alignment="center", width="stretch", border=False)
+            colOrig, colQrOrig = st.columns(self.colTwoOne, vertical_alignment="center", width="stretch", border=False)
             linkOrig = '.'.join(dataAllSplit[0])
             colOrig.markdown(f":material/link: {linkOrig}", unsafe_allow_html=True, 
                              width="stretch", text_alignment="left")
             byteImg = acessories(linkOrig).createQrCode(2)
             colQrOrig.image(byteImg, width="content", link=linkOrig)
             textAud = f"Para acessar o site oficial, dê um clique no link {linkOrig} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
-            try:
-                audData = self.createAudVoice(textAud) 
-                colAudOrig.audio(audData.getvalue(), format="audio/wav", width="stretch")
-            except: 
-                pass
                 
     def dictCols(self):
         self.dictTextAud = {}
@@ -376,17 +371,10 @@ class displayQuery():
                                     eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
                                     st.markdown(f":material/document_scanner: _download não gerado_")
                                     st.markdown(f":material/globe_2_cancel: {eAdd}", width="stretch")
-                                #colDown, colQrUrl, colAudUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
                                 colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
                                 colDown.markdown(f":material/download_2: :red[**{url}**]", width="stretch")
                                 byteImg = acessories(url).createQrCode(2)
                                 colQrUrl.image(byteImg, width="content", link=url)
-                                #textAud = f"Para tentar fazer download, dê um clique no link {url} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
-                                #try:
-                                #    audData = self.createAudVoice(textAud) 
-                                #    colAudUrl.audio(audData.getvalue(), format="audio/wav", width="stretch")
-                                #except Exception as error: 
-                                #    colAudUrl.markdown(error)
             self.colData.space(size="small")
         keyDfAll = f"{self.cont}_all"
         with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
