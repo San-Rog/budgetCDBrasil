@@ -234,7 +234,7 @@ class displayQuery():
         numStr = f"{nSelDf} deputado federal" if nSelDf <= 1 else f"{nSelDf} deputados federais" 
         self.nSelDf = nSelDf
         self.colThree = [7, 2, 4]
-        self.colTwoTwo = [14, 8]
+        self.colTwoTwo = [20, 4]
         self.colTwo = [4, 10]
         self.allSelDf, self.colData, self.start, self.end = (allSelDf, colData, start, end)
         self.cols, self.results = (cols, results)
