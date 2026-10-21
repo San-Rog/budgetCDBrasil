@@ -384,8 +384,8 @@ class displayQuery():
                                 try:
                                     audData = self.createAudVoice(textAud) 
                                     colAudUrl.audio(audData.getvalue(), format="audio/wav", width="stretch")
-                                except: 
-                                    pass
+                                except Exception as error: 
+                                    colAudUrl.markdown(error)
             self.colData.space(size="small")
         keyDfAll = f"{self.cont}_all"
         with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
@@ -516,6 +516,7 @@ class displayQuery():
                 
     @st.cache_data(show_spinner=False, ttl=30, max_entries=2)
     def createAudVoice(_self, textAud: str) -> bytes:
+        audBytes = None
         nameTemp = "tempAud.wav"
         try:
             tts = gTTS(text=textAud, lang="pt")
