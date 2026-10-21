@@ -377,7 +377,7 @@ class displayQuery():
                                     st.markdown(f":material/document_scanner: _download não gerado_")
                                     st.markdown(f":material/globe_2_cancel: {eAdd}", width="stretch")
                                 #colDown, colQrUrl, colAudUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
-                                colDown, colAudUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
+                                colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
                                 colDown.markdown(f":material/download_2: :red[**{url}**]", width="stretch")
                                 byteImg = acessories(url).createQrCode(2)
                                 colQrUrl.image(byteImg, width="content", link=url)
