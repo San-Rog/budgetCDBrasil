@@ -229,7 +229,7 @@ class displayQuery():
         """)
         return self.placeholderBlock
     
-    def queryDf(self, cols, allSelDf, results, colData, start, end, categ):
+    def queryDf(self, cols, allSelDf, results, colData, start, end, categ, typeExp):
         nSelDf = len(allSelDf)
         numStr = f"{nSelDf} deputado federal" if nSelDf <= 1 else f"{nSelDf} deputados federais" 
         self.nSelDf = nSelDf
@@ -239,6 +239,7 @@ class displayQuery():
         self.allSelDf, self.colData, self.start, self.end = (allSelDf, colData, start, end)
         self.cols, self.results = (cols, results)
         self.categ = categ
+        self.typeExp = typeExp
         self.arrow = ":material/arrow_range:"        
         self.screenExpander()  
         self.screenLaunch()
@@ -503,7 +504,9 @@ class displayQuery():
                     self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).checkTypeDoc()}")  
                 else:
                     newCols[col] = col
-        self.dfCopy.rename(columns=newCols, inplace=True)        
+        self.dfCopy.rename(columns=newCols, inplace=True)
+        colsCopy = list(self.dfCopy.columns)
+        self.dfCopy = self.dfCopy.sort_values(by=colsCopy[7])
                 
     @st.cache_data(show_spinner=False, ttl=30, max_entries=2)
     def createAudVoice(_self, textAud: str) -> bytes:
@@ -622,8 +625,9 @@ class windowStream():
         optYears.insert(0, '')
         self.optYearsEnd = []
         self.optMonthsEnd = []
-        optPart = self.filters[self.keys[2]]
-        optUfs = self.filters[self.keys[3]]
+        self.typeExp = self.filters[self.keys[1]]
+        optPart = self.filters[self.keys[3]]
+        optUfs = self.filters[self.keys[4]]
         nOptUfs = len(optUfs)
         optUfs.insert(0, '')
         self.optMonths = []
@@ -801,7 +805,7 @@ class windowStream():
                 title = f":material/data_table: acesso ao site oficial"
                 objDisplay = displayQuery(title)
                 objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
-                                   self.yearStart, self.yearEnd, value)
+                                   self.yearStart, self.yearEnd, value, self.typeExp)
                 placeHolder.empty()
             case 2:
                 #objDisplay.filterDf(self.cols)
@@ -939,7 +943,7 @@ class operationFiles():
         dictFilters = {}
         connDisk = sqlite3.connect(fileDb)
         cursor = connDisk.cursor()
-        fieldsDb = [allFieldsDb[z] for z in range(zFieldsDb) if z in [1, 14, 25, 26]]
+        fieldsDb = [allFieldsDb[z] for z in range(zFieldsDb) if z in [1, 7, 14, 25, 26]]
         for fielDb in fieldsDb: 
             query = f"SELECT DISTINCT {fielDb} FROM {_self.tableDb} ORDER BY {fielDb} ASC"
             df = pd.read_sql(query, connDisk)
