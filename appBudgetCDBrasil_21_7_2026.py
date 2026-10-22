@@ -16,6 +16,8 @@ from gtts import gTTS
 import streamlit as st
 import zstandard as zstd
 from datetime import date
+from pypdf import PdfReader, PdfWriter
+from io import BytesIO
 from datetime import datetime
 from decimal import Decimal
 from streamlit_float import *
@@ -575,28 +577,51 @@ class displayQuery():
             st.markdown("Não há documentos para download.")
         else:
             dctPdfBytes = []
+            filesByte = []
             for dct, data in dctData.items(): 
                 values = data[0]
                 valuesOrig = [re.sub(r"[^\w\s]", "", value) for value in values[:-2]]
                 valuesName = "_".join(valuesOrig) + ".pdf"
                 valueBytes = values[-1]
+                filesByte.append(filesByte)
                 dctPdfBytes.append({"df": values[0], "name": valuesName, "bytes": valueBytes})
             ziPdfs, textPdfs = operationFiles(None).saveDownPdf(dctPdfBytes)
+            nFiles = len(dctData)
+            mergePdfs = operationFiles(None).saveMergePdf() if nFiles > 1 else ""
             st.markdown(textPdfs, unsafe_allow_html=True)
-            colEmptyOne, colButtDown, colEmptyTwo = st.columns([1.5, 6, 1.5], vertical_alignment="center", 
-                                                               width="stretch")
-            if ziPdfs: 
-                now = datetime.now()
-                nowStr = now.strftime("%d_%m_%Y_%d_%H_%M_%S")
-                nameZip = f"app_cotas_cd_{nowStr}.zip"
-                colButtDown.download_button(
-                        label=f":material/folder_zip: {nameZip}",
+            colDownZip = st.columns([1.5, 6, 1.5], vertical_alignment="center", width="stretch", border=False) 
+            colDowZipMerge = st.columns([6, 6], vertical_alignment="center", width="stretch", border=False) 
+            now = datetime.now()
+            nowStr = now.strftime("%d_%m_%Y_%d_%H_%M_%S")
+            nameZip = [f"cotas_cd_{nowStr}.zip", "Gravará em sua pasta donwloads o arquivo zipado abaixo."]
+            nameMerge = [f"cotas_cd_{nowStr}.pdf", "Gravará em sua pasta donwloads o arquivo PDF único abaixo."]              
+            if all([ziPdfs, mergePdfs]): 
+                colDowZipMerge[0].download_button(
+                        label=f":material/folder_zip: {nameZip[0]}",
                         data=ziPdfs,
-                        file_name=nameZip,
+                        file_name=nameZip[0],
                         mime="application/zip",
                         key="keyButton_zip", 
                         width="stretch", 
-                        help=f"Gravará em sua pasta donwloads o arquivo zipado abaixo.")
+                        help=nameZip[1])
+                colDowZipMerge[1].download_button(
+                        label=f":material/folder_zip: {nameMerge[0]}",
+                        file_name=nameMerge[0],
+                        data=mergePdfs,
+                        mime="application/pdf", 
+                        key="keyButton_pdf", 
+                        width="stretch", 
+                        help=nameMerge[1])
+            else:
+                if ziPdfs:
+                    colDownZip[1].download_button(
+                            label=f":material/folder: {nameZip[0]}",
+                            data=ziPdfs,
+                            file_name=nameZip[0],
+                            mime="application/zip",
+                            key="keyButton_zip", 
+                            width="stretch", 
+                            help=nameZip[1])            
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
@@ -815,7 +840,6 @@ class windowStream():
             case 5:
                 #objDisplay.filterDf(self.cols)
                 pass
-    
     
     def defineMonths(self, num):
         yearSel = self.yearStart
@@ -1080,6 +1104,25 @@ class operationFiles():
             textCount += f":material/functions: {acessories(allCount).convertNumber(0)} {addAllCount} (total)<br>"   
             return(buffer, textCount)
         except:
+            return "" 
+
+    @st.cache_data(show_spinner=False, ttl=30, max_entries=15)
+    def saveMergePdf(_self):
+        try:
+            dataFile = st.session_state[wordKeys[14]]
+            keys = list(dataFile.keys())
+            allBytes = []
+            writer = PdfWriter()
+            for k, key in enumerate(keys):
+                data = dataFile[key][0]
+                byte = data[-1]
+                reader = PdfReader(BytesIO(byte))
+                for page in reader.pages:
+                    writer.add_page(page)
+                    buffer = BytesIO()
+                    writer.write(buffer)
+            return buffer
+        except: 
             return ""        
     
 class main():
