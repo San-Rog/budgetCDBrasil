@@ -13,3 +13,4 @@ streamlit_float
 validate_docbr
 selenium
 pymupdf
+pypdf
