@@ -344,9 +344,7 @@ class displayQuery():
                             if self.categ == 0:
                                 st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
                             else:
-                                self.dfOrig = self.df.iloc[[u]]
-                                self.configDataFrame()
-                                st.dataframe(data=self.dfCopy, width="stretch", hide_index=True)
+                                st.dataframe(data=self.dfCopy.iloc[[u]], width="stretch", hide_index=True)
                             if url.strip() == '':
                                 st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
                             else:
@@ -501,23 +499,8 @@ class displayQuery():
                     self.dfCopy[col] = self.dfCopy[col].apply(lambda val: f"{acessories(val).checkTypeDoc()}")  
                 else:
                     newCols[col] = col
-        self.dfCopy.rename(columns=newCols, inplace=True)
-        colsCopy = list(self.dfCopy.columns)
-        self.dfCopy = self.dfCopy.sort_values(by=colsCopy[7])
-                
-    @st.cache_data(show_spinner=False, ttl=30, max_entries=2)
-    def createAudVoice(_self, textAud: str) -> bytes:
-        audBytes = None
-        nameTemp = "tempAud.wav"
-        try:
-            tts = gTTS(text=textAud, lang="pt")
-            audBytes = io.BytesIO()
-            tts.write_to_fp(audBytes)
-        finally:
-            if os.path.exists(nameTemp):
-                os.remove(nameTemp)
-        return audBytes
-    
+        self.dfCopy.rename(columns=newCols, inplace=True) 
+        
     @st.dialog(title='Colunas', width="medium", icon=":material/analytics:", on_dismiss="ignore")
     def filterDf(self, cols):
         colsMark = [w for w in range(len(cols))]
