@@ -317,7 +317,7 @@ class displayQuery():
                     colAunch.markdown(self.exprLanc) 
                     colSum.markdown(self.exprLiq)
                     if self.categ in [0, 1, 3]:
-                        if self.categ == 0: 
+                        if self.categ in [0, 3]: 
                             st.dataframe(data=self.df, width="stretch", hide_index=True)
                         else:
                             self.dfOrig = self.df
@@ -340,41 +340,7 @@ class displayQuery():
                             exprLiqUr += f" (:blue[{(acessories(valReal).convertNumExt()).lower()}])"
                             colDetail.markdown(exprLancUr)
                             colLiq.markdown(exprLiqUr)
-                            year, code, month, num, url = [ur[1], ur[2], ur[14], ur[16], ur[29]]
-                            if self.categ == 0:
-                                st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
-                            else:
-                                st.dataframe(data=self.dfCopy.iloc[[u]], width="stretch", hide_index=True)
-                            if url.strip() == '':
-                                st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
-                            else:
-                                addRec = "(:red[recomenda-se verificação usando as opções _link_ ou _qrcode_ abaixo])"
-                                try:
-                                    helpButt = "Caso não apareça documento algum, tente baixá-lo usando o link ou o qrCode abaixo. " \
-                                               "Caso apareça, posicione o mouse sobre a imagem, clicando com o botão direito para copiá-la ou salvá-la."
-                                    pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
-                                    if pdfBytes.startswith(b'%PDF-'):
-                                        st.markdown(f":material/document_scanner: _documento baixado_", help=helpButt) 
-                                    else:
-                                        pdfBytes = operationFiles(None).seleniumImgPdf(url)
-                                        if pdfBytes != "":
-                                            st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
-                                        else: 
-                                            pdfBytes = operationFiles(None).seleniumRendPdf(url)
-                                            if pdfBytes != "":
-                                                st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
-                                    st.session_state[wordKeys[14]].setdefault(url, [])
-                                    comboUrl = (self.selDf, contUs.replace('/', '_'), month, year, code, num, self.df.iloc[[u]], pdfBytes) 
-                                    st.session_state[wordKeys[14]][url].append(comboUrl)
-                                    st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{self.cont}")
-                                except Exception as e:
-                                    eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
-                                    st.markdown(f":material/document_scanner: _download não gerado_")
-                                    st.markdown(f":material/globe_2_cancel: {eAdd}", width="stretch")
-                                colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
-                                colDown.markdown(f":material/download_2: :red[**{url}**]", width="stretch")
-                                byteImg = acessories(url).createQrCode(2)
-                                colQrUrl.image(byteImg, width="content", link=url)
+                            self.checkUrl(u, ur, contUs)                            
             self.colData.space(size="small")
         keyDfAll = f"{self.cont}_all"
         with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
@@ -408,7 +374,50 @@ class displayQuery():
                 self.df[self.colsSummary[-1]] = self.df[self.colsSummary[-1]].apply(lambda val: f"{acessories(val).convertNumber(2)}")
             st.dataframe(data=self.df, width="stretch", hide_index=True)
             displayQuery('Download de comprovantes').copyFile()
-        
+    
+    def checkUrl(self, u, ur, contUs):
+        year, code, month, num, url = [ur[1], ur[2], ur[14], ur[16], ur[29]]
+        if self.categ in [0, 3]:
+            st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
+        else:
+            st.dataframe(data=self.dfCopy.iloc[[u]], width="stretch", hide_index=True)
+        if url.strip() == '':
+            st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
+        else:
+            addRec = "(:red[recomenda-se verificação usando as opções _link_ ou _qrcode_ abaixo])"
+            try:
+                helpButt = "Caso não apareça documento algum, tente baixá-lo usando o link ou o qrCode abaixo. " \
+                           "Caso apareça, posicione o mouse sobre a imagem, clicando com o botão direito para copiá-la ou salvá-la."
+                pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
+                if pdfBytes.startswith(b'%PDF-'):
+                    st.markdown(f":material/document_scanner: _documento baixado_", help=helpButt) 
+                else:
+                    pdfBytes = operationFiles(None).seleniumImgPdf(url)
+                    if pdfBytes != "":
+                        st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
+                    else: 
+                        pdfBytes = operationFiles(None).seleniumRendPdf(url)
+                        if pdfBytes != "":
+                            st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
+                if self.categ in [0, 1]:
+                    st.session_state[wordKeys[14]].setdefault(url, [])
+                    comboUrl = (self.selDf, contUs.replace('/', '_'), month, year, code, num, self.df.iloc[[u]], pdfBytes) 
+                    st.session_state[wordKeys[14]][url].append(comboUrl)
+                    st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{self.cont}")
+            except Exception as e:
+                if self.categ in [0, 1]:
+                    eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
+                    st.markdown(f":material/document_scanner: _download não gerado_")
+                    st.markdown(f":material/globe_2_cancel: {eAdd}", width="stretch")
+            colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
+            if self.categ in [0, 1]:            
+                colDown.markdown(f":material/download_2: :red[**{url}**]", width="stretch")
+                byteImg = acessories(url).createQrCode(2)
+                colQrUrl.image(byteImg, width="content", link=url)
+            elif self.categ == 3:
+                colDown.markdown(f"{u} <--> {ur}")
+                colQrUrl.markdown(contUs)
+    
     def calcSumAll(self):
         cotas = [result for result in self.results if result[15] == self.selDf]
         self.newCotas = []
