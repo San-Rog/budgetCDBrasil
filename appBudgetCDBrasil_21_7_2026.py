@@ -316,7 +316,7 @@ class displayQuery():
                     colAunch, colSum = st.columns(self.colTwo, border=False, width="stretch")
                     colAunch.markdown(self.exprLanc) 
                     colSum.markdown(self.exprLiq)
-                    if self.categ in [0, 1]:
+                    if self.categ in [0, 1, 3]:
                         if self.categ == 0: 
                             st.dataframe(data=self.df, width="stretch", hide_index=True)
                         else:
@@ -811,13 +811,12 @@ class windowStream():
                 objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
                                    self.yearStart, self.yearEnd, value, self.typeExp)
             case 2:
+                pass
+            case 3:
                 title = f":material/data_table: acesso ao site oficial"
                 objDisplay = displayQuery(title)
                 objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
                                    self.yearStart, self.yearEnd, value, self.typeExp)
-            case 3:
-                #objDisplay.filterDf(self.cols)
-                pass
             case 4:
                 #objDisplay.filterDf(self.cols)
                 pass
