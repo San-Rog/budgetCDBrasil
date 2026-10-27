@@ -26,6 +26,8 @@ from validate_docbr import CPF, CNPJ
 from brutils.currency import format_currency
 from brutils import convert_real_to_text
 from brutils.ibge.uf import convert_uf_to_name
+from brutils import is_valid_cpf, format_cpf
+from brutils import is_valid_cnpj, format_cnpj
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.print_page_options import PrintOptions
@@ -155,17 +157,49 @@ class acessories():
         placeText = f"{symbs[0]} Executando rotinas do app.<br>{symbs[1]} Aguarde, por favor!" 
         return placeText
     
-    def formatTextPlace(self):
-        self.yearStart, self.monthStart, self.yearEnd, self.monthEnd, self.valueUf, self.valueDf = [st.session_state[wordKeys[w]] for w in range(5, 11)]
-        keys = list(helpPlace.keys())
-        self.textPlace = ''
-        for d, data in enumerate([[self.yearStart, self.monthStart], [self.yearEnd, self.monthEnd]]):
-            if all(data): 
-                allStart = helpPlace[keys[d]]
-                symbStart = "🗓️"
-                nameStart = allStart[1]
-                dateStart = f"{data[0]} de {data[1]}"
-                self.textPlace += f"{symbStart} {dateStart} ({nameStart})<br>"
+    def checkDfError(self, dataDf, urlExist, cols): 
+        dfError = []
+        numCode = [2, 4]
+        for d, data in enumerate(dataDf):
+            if d not in numCode: 
+                dfError.append(data)
+            else:
+                code = data
+                isCode = True
+                codeStr = "formato correto"
+                if code.strip() == "":
+                    isCode = False
+                    codeStr = "dado inexistente"
+                    codeCorrect = ""
+                else:
+                    codeRe = re.sub(r'[^a-zA-Z0-9]', '', code)
+                    testOne = is_valid_cnpj(codeRe)
+                    testTwo = is_valid_cpf(codeRe)
+                    if any([testOne, testTwo]): 
+                        isCode = True
+                    formatCnpj = format_cnpj(code)
+                    formatCpf = format_cpf(code)
+                    if any([code == formatCnpj, code == formatCpf]):  
+                        codeStr = "formatação correta"
+                    else:
+                        codeStr = "formatação incorreta"        
+                    formatCnpjNew = format_cnpj(codeRe)
+                    formatCpfNew = format_cpf(codeRe)
+                    if formatCnpjNew is not None: 
+                        codeCorrect = formatCnpjNew
+                    else:
+                        if formatCpfNew is not None:
+                            codeCorrect = formatCpfNew
+                        else:
+                            codeCorrect = ""                    
+                codeVal = "código válido" if isCode else "código inválido"
+                dfError.append(f"{data}; {codeVal}; {codeStr}; {codeCorrect}")
+        dictComb = {}
+        for c, col in enumerate(cols): 
+            dictComb.setdefault(col, [])
+            dictComb[col].append(dfError[c])
+        dfComb = pd.DataFrame(dictComb)
+        return dfComb    
             
 class displayQuery():
     def __init__(self, title):
@@ -304,12 +338,14 @@ class displayQuery():
             keyDf = f"{self.selDf}_{self.s + 1}"
             self.calcSumAll()
             self.summaryFull()
-            addDf = [f"**Tabela com todos os gastos do(a) deputado(a) federal :red[{self.selDf}]**", 
-                     f"**Detalhamento dos gastos do(a) deputado(a) federal :red[{self.selDf}]**", 
-                     f"**Resumo dos gastos pesquisados**"]            
+            self.addDf = [f"**Tabela com todos os gastos do(a) deputado(a) federal :red[{self.selDf}]**", 
+                          f"**Detalhamento dos gastos do(a) deputado(a) federal :red[{self.selDf}]**", 
+                          f"**Resumo dos gastos pesquisados**"] 
+            if self.categ in [3]: 
+                self.addDf[1] = f"**Detalhamento dos erros registrais nos gastos do(a) deputado(a) federal :red[{self.selDf}]**"
             with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
                                         vertical_alignment="center", key=keyDf): 
-                st.subheader(addDf[0], icon=":material/list_alt:", width="stretch", text_alignment="center", anchor=None)
+                st.subheader(self.addDf[0], icon=":material/list_alt:", width="stretch", text_alignment="center", anchor=None)
                 with st.container(border=True):
                     (colDfAll, ) = st.columns(1, border=False) 
                     colDfAll.markdown(self.exprDf)
@@ -325,7 +361,7 @@ class displayQuery():
                             st.dataframe(data=self.dfCopy, width="stretch", hide_index=True)
                     self.allDfs[self.selDf] = self.df
                 for url in self.urlDocs:
-                    st.subheader(addDf[1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)
+                    st.subheader(self.addDf[1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)
                     for u, ur in enumerate(url):
                         keyDfUrl = f"{self.selDf}_{self.s + 1}_{u+1}"
                         with st.container(border=True, key=keyDfUrl):
@@ -342,10 +378,67 @@ class displayQuery():
                             colLiq.markdown(exprLiqUr)
                             self.checkUrl(u, ur, contUs)                            
             self.colData.space(size="small")
+        self.organizeDf()
+            
+    def checkUrl(self, u, ur, contUs):
+        year, code, month, num, url = [ur[1], ur[2], ur[14], ur[16], ur[29]]
+        if self.categ in [0, 3]:
+            st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
+        else:
+            st.dataframe(data=self.dfCopy.iloc[[u]], width="stretch", hide_index=True)
+        urlExist = False
+        colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
+        if url.strip() == '':
+            if self.categ in [0, 1]:
+                st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
+        else:
+            addRec = "(:red[recomenda-se verificação usando as opções _link_ ou _qrcode_ abaixo])"
+            try:
+                helpButt = "Caso não apareça documento algum, tente baixá-lo usando o link ou o qrCode abaixo. " \
+                           "Caso apareça, posicione o mouse sobre a imagem, clicando com o botão direito para copiá-la ou salvá-la."
+                pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
+                if pdfBytes.startswith(b'%PDF-'):
+                    urlExist = True
+                    if self.categ in [0, 1]:
+                        st.markdown(f":material/document_scanner: _documento baixado_", help=helpButt) 
+                else:
+                    pdfBytes = operationFiles(None).seleniumImgPdf(url)
+                    if pdfBytes != "":
+                        urlExist = True
+                        if self.categ in [0, 1]:
+                            st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
+                    else: 
+                        pdfBytes = operationFiles(None).seleniumRendPdf(url)
+                        if pdfBytes != "":
+                            urlExist = True
+                            if self.categ in [0, 1]:
+                                st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
+                if self.categ in [0, 1]:
+                    st.session_state[wordKeys[14]].setdefault(url, [])
+                    comboUrl = (self.selDf, contUs.replace('/', '_'), month, year, code, num, self.df.iloc[[u]], pdfBytes) 
+                    st.session_state[wordKeys[14]][url].append(comboUrl)
+                    st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{self.cont}")
+            except Exception as e:
+                if self.categ in [0, 1]:
+                    eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
+                    st.markdown(f":material/document_scanner: _download não gerado_")
+                    st.markdown(f":material/globe_2_cancel: {eAdd}", width="stretch")
+            if self.categ in [0, 1]:            
+                colDown.markdown(f":material/download_2: :red[**{url}**]", width="stretch")
+                byteImg = acessories(url).createQrCode(2)
+                colQrUrl.image(byteImg, width="content", link=url)
+        if self.categ == 3:
+            dfError = acessories(None).checkDfError(ur, urlExist, self.cols)
+            (colError, ) = st.columns(1, vertical_alignment="center", width="stretch", border=False)
+            with colError:
+                st.markdown(":material/verified: _avaliação dos dados_", width="stretch", text_alignment="center")
+                st.dataframe(data=dfError, width="stretch", hide_index=True)
+    
+    def organizeDf(self):
         keyDfAll = f"{self.cont}_all"
         with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
                                     vertical_alignment="center", key=keyDfAll): 
-            st.subheader(addDf[-1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)                   
+            st.subheader(self.addDf[-1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)                   
             df = pd.DataFrame(self.allSummary)  
             keysSumm = list(self.allSummary.keys())
             for k, key in enumerate(keysSumm):
@@ -357,8 +450,8 @@ class displayQuery():
                     case 3:
                         sumVal = sum(self.allSummary[key])
             colDetailAll, colLiqAll = st.columns(self.colTwo, border=False)
-            addDf = "deputado(a) federal" if nDf <= 1 else "deputados(as) federais"
-            exprLancUrAll = f":material/topic: :red[**{acessories(nDf).convertNumber(0)}**] _{addDf}_"
+            self.addDf = "deputado(a) federal" if nDf <= 1 else "deputados(as) federais"
+            exprLancUrAll = f":material/topic: :red[**{acessories(nDf).convertNumber(0)}**] _{self.addDf}_"
             exprLiqUrAll = f":material/money_bag: _despesa líquida global de_ :red[**R$ {acessories(sumVal).convertNumber(1)}**]"
             exprLiqUrAll += f" (:blue[{(acessories(sumVal).convertNumExt()).lower()}])"
             colDetailAll.markdown(exprLancUrAll)
@@ -370,53 +463,12 @@ class displayQuery():
             self.cols = self.colsSummary
             self.df = df
             self.sumValues()
-            if self.categ != 0:
+            st.markdown(f"categ = {self.categ}")
+            if self.categ == 1:
                 self.df[self.colsSummary[-1]] = self.df[self.colsSummary[-1]].apply(lambda val: f"{acessories(val).convertNumber(2)}")
             st.dataframe(data=self.df, width="stretch", hide_index=True)
-            displayQuery('Download de comprovantes').copyFile()
-    
-    def checkUrl(self, u, ur, contUs):
-        year, code, month, num, url = [ur[1], ur[2], ur[14], ur[16], ur[29]]
-        if self.categ in [0, 3]:
-            st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
-        else:
-            st.dataframe(data=self.dfCopy.iloc[[u]], width="stretch", hide_index=True)
-        if url.strip() == '':
-            st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
-        else:
-            addRec = "(:red[recomenda-se verificação usando as opções _link_ ou _qrcode_ abaixo])"
-            try:
-                helpButt = "Caso não apareça documento algum, tente baixá-lo usando o link ou o qrCode abaixo. " \
-                           "Caso apareça, posicione o mouse sobre a imagem, clicando com o botão direito para copiá-la ou salvá-la."
-                pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
-                if pdfBytes.startswith(b'%PDF-'):
-                    st.markdown(f":material/document_scanner: _documento baixado_", help=helpButt) 
-                else:
-                    pdfBytes = operationFiles(None).seleniumImgPdf(url)
-                    if pdfBytes != "":
-                        st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
-                    else: 
-                        pdfBytes = operationFiles(None).seleniumRendPdf(url)
-                        if pdfBytes != "":
-                            st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
-                if self.categ in [0, 1]:
-                    st.session_state[wordKeys[14]].setdefault(url, [])
-                    comboUrl = (self.selDf, contUs.replace('/', '_'), month, year, code, num, self.df.iloc[[u]], pdfBytes) 
-                    st.session_state[wordKeys[14]][url].append(comboUrl)
-                    st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{self.cont}")
-            except Exception as e:
-                if self.categ in [0, 1]:
-                    eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
-                    st.markdown(f":material/document_scanner: _download não gerado_")
-                    st.markdown(f":material/globe_2_cancel: {eAdd}", width="stretch")
-            colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
-            if self.categ in [0, 1]:            
-                colDown.markdown(f":material/download_2: :red[**{url}**]", width="stretch")
-                byteImg = acessories(url).createQrCode(2)
-                colQrUrl.image(byteImg, width="content", link=url)
-            elif self.categ == 3:
-                colDown.markdown(f"{u} <--> {ur}")
-                colQrUrl.markdown(contUs)
+            if self.categ in [0, 1]:
+                displayQuery('Download de comprovantes').copyFile()
     
     def calcSumAll(self):
         cotas = [result for result in self.results if result[15] == self.selDf]
