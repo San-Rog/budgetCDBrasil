@@ -801,19 +801,20 @@ class windowStream():
                             """, unsafe_allow_html=True)
     
     def checkButton(self, value):
+        placeText = acessories(None).definePlace()
+        objDisplay = displayQuery(placeText)
+        placeHolder = objDisplay.setHtmlPlace(self.colData)
         match value:
             case 0 | 1:
-                placeText = acessories(None).definePlace()
-                objDisplay = displayQuery(placeText)
-                placeHolder = objDisplay.setHtmlPlace(self.colData)
                 title = f":material/data_table: acesso ao site oficial"
                 objDisplay = displayQuery(title)
                 objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
                                    self.yearStart, self.yearEnd, value, self.typeExp)
-                placeHolder.empty()
             case 2:
-                #objDisplay.filterDf(self.cols)
-                pass
+                title = f":material/data_table: acesso ao site oficial"
+                objDisplay = displayQuery(title)
+                objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
+                                   self.yearStart, self.yearEnd, value, self.typeExp)
             case 3:
                 #objDisplay.filterDf(self.cols)
                 pass
@@ -823,6 +824,7 @@ class windowStream():
             case 5:
                 #objDisplay.filterDf(self.cols)
                 pass
+        placeHolder.empty()
     
     def defineMonths(self, num):
         yearSel = self.yearStart
