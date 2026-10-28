@@ -157,49 +157,76 @@ class acessories():
         placeText = f"{symbs[0]} Executando rotinas do app.<br>{symbs[1]} Aguarde, por favor!" 
         return placeText
     
-    def checkDfError(self, dataDf, urlExist, cols): 
+    def checkDfError(self, dataDf, urlExist, cols, icons): 
         dfError = []
         numCode = [2, 4]
+        self.icons = icons
+        self.dictCode = {0: ["CNPJ/CPF inexistente", "CNPJ válido", "CPF válido", "CNPJ/CPF inválido"], 
+                         1: ["sem formatação", "formatação certa", "formatação errada"], 
+                         2: ["não formatável"]}
         for d, data in enumerate(dataDf):
             if d not in numCode: 
-                dfError.append(data)
-            else:
-                code = data
-                isCode = True
-                codeStr = "formato correto"
-                if code.strip() == "":
-                    isCode = False
-                    codeStr = "dado inexistente"
-                    codeCorrect = ""
+                if len(data) == 0:
+                    dataStr = self.icons[2][0]
                 else:
-                    codeRe = re.sub(r'[^a-zA-Z0-9]', '', code)
-                    testOne = is_valid_cnpj(codeRe)
-                    testTwo = is_valid_cpf(codeRe)
-                    if any([testOne, testTwo]): 
-                        isCode = True
-                    formatCnpj = format_cnpj(code)
-                    formatCpf = format_cpf(code)
-                    if any([code == formatCnpj, code == formatCpf]):  
-                        codeStr = "formatação correta"
-                    else:
-                        codeStr = "formatação incorreta"        
-                    formatCnpjNew = format_cnpj(codeRe)
-                    formatCpfNew = format_cpf(codeRe)
-                    if formatCnpjNew is not None: 
-                        codeCorrect = formatCnpjNew
-                    else:
-                        if formatCpfNew is not None:
-                            codeCorrect = formatCpfNew
-                        else:
-                            codeCorrect = ""                    
-                codeVal = "código válido" if isCode else "código inválido"
-                dfError.append(f"{data}; {codeVal}; {codeStr}; {codeCorrect}")
+                    dataStr = f"{data} {self.icons[0][0]}"
+                dfError.append(dataStr)
+            else:
+                self.code = data
+                exprData = self.checkCodeDf()
+                dfError.append(exprData)
         dictComb = {}
         for c, col in enumerate(cols): 
             dictComb.setdefault(col, [])
             dictComb[col].append(dfError[c])
         dfComb = pd.DataFrame(dictComb)
-        return dfComb    
+        return dfComb  
+    
+    def checkCodeDf(self):
+        if self.code.strip() == "":
+            isCode = self.dictCode[0][0]
+            codeStr = self.dictCode[1][0]
+            codeCorrect = ""
+        else:
+            codeRe = re.sub(r'[^a-zA-Z0-9]', '', self.code)
+            testOne = is_valid_cnpj(codeRe)
+            testTwo = is_valid_cpf(codeRe)
+            codeStr = self.dictCode[1][0]
+            codeCorrect = ""
+            if testOne: 
+                isCode = self.dictCode[0][1]                
+            else:
+                if testTwo:
+                    isCode = self.dictCode[0][2]
+                else:
+                    isCode = self.dictCode[0][3]
+                formatCnpj = format_cnpj(self.code)
+                formatCpf = format_cpf(self.code)
+                if any([self.code == formatCnpj, self.code == formatCpf]):  
+                    codeStr = self.dictCode[1][1]
+                else:
+                    codeStr = self.dictCode[1][2]        
+                formatCnpjNew = format_cnpj(codeRe)
+                formatCpfNew = format_cpf(codeRe)
+                if formatCnpjNew is not None: 
+                    codeCorrect = f"({formatCnpjNew})"                        
+                else:
+                    if formatCpfNew is not None:
+                        codeCorrect = f"({formatCpfNew})"
+                    else:
+                        codeCorrect = self.dictCode[2][0]                   
+        codesYes = self.dictCode[0][1:3] + self.dictCode[1][1:2]
+        codesYesStr = " ".join(codesYes)
+        #self.icons = {0: ["✔️", "certo"], 1: ["❌", "errado"], 2: ["🚫", "vazio"]}
+        words = ["inexistente", "inválido", "sem", "errada", "não"]
+        symbAdd = self.icons[0][0]
+        for testCode in [isCode, codeStr, codeCorrect]: 
+            for word in words: 
+                if testCode.find(testCode) >= 0: 
+                    symbAdd = self.icons[1][0]
+                    break
+        exprData = f"{self.code}; {isCode}; {codeStr}; {codeCorrect} {symbAdd}"
+        return exprData       
             
 class displayQuery():
     def __init__(self, title):
@@ -332,6 +359,7 @@ class displayQuery():
         self.colsParty = [25]
         self.colState = [26]
         self.colsTypeNum = [27]
+        self.icons = {0: ["✔️", "certo"], 1: ["❌", "errado"], 2: ["🚫", "vazio"]}
         self.placeText = acessories(None).definePlace()
         objDisplay = displayQuery("").setPage(1)
         for self.s, self.selDf in enumerate(self.allSelDf):
@@ -370,17 +398,18 @@ class displayQuery():
                             colDf.markdown(self.exprDf)
                             contUs = f"{u+1}/{self.nLanc}"
                             colDetail, colLiq = st.columns(self.colTwo, border=False)
-                            exprLancUr = f":material/tag: _lançamento_ :red[**{contUs}**]"
+                            exprLanc = f"_lançamento_ :red[**{contUs}**]"
+                            exprLancUr = f":material/tag: {exprLanc}"
                             valReal = self.newCotas[u][-1]
                             exprLiqUr = f":material/money_bag: _despesa líquida parcial de_ :red[**R$ {acessories(valReal).convertNumber(1)}**]"
                             exprLiqUr += f" (:blue[{(acessories(valReal).convertNumExt()).lower()}])"
                             colDetail.markdown(exprLancUr)
                             colLiq.markdown(exprLiqUr)
-                            self.checkUrl(u, ur, contUs)                            
+                            self.checkUrl(u, ur, contUs, exprLanc)                            
             self.colData.space(size="small")
         self.organizeDf()
             
-    def checkUrl(self, u, ur, contUs):
+    def checkUrl(self, u, ur, contUs, exprLancUr):
         year, code, month, num, url = [ur[1], ur[2], ur[14], ur[16], ur[29]]
         if self.categ in [0, 3]:
             st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
@@ -428,10 +457,11 @@ class displayQuery():
                 byteImg = acessories(url).createQrCode(2)
                 colQrUrl.image(byteImg, width="content", link=url)
         if self.categ == 3:
-            dfError = acessories(None).checkDfError(ur, urlExist, self.cols)
+            iconStr = '  '.join([f"{w[0]} ({w[1]})" for w in self.icons.values()])
+            dfError = acessories(None).checkDfError(ur, urlExist, self.cols, self.icons)
             (colError, ) = st.columns(1, vertical_alignment="center", width="stretch", border=False)
             with colError:
-                st.markdown(":material/verified: _avaliação dos dados_", width="stretch", text_alignment="center")
+                st.markdown(f":material/analytics: _análise e avaliação dos dados referentes ao_ {exprLancUr} │ {iconStr}", width="stretch", text_alignment="left")
                 st.dataframe(data=dfError, width="stretch", hide_index=True)
     
     def organizeDf(self):
@@ -463,7 +493,6 @@ class displayQuery():
             self.cols = self.colsSummary
             self.df = df
             self.sumValues()
-            st.markdown(f"categ = {self.categ}")
             if self.categ == 1:
                 self.df[self.colsSummary[-1]] = self.df[self.colsSummary[-1]].apply(lambda val: f"{acessories(val).convertNumber(2)}")
             st.dataframe(data=self.df, width="stretch", hide_index=True)
