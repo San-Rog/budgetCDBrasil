@@ -186,13 +186,14 @@ class acessories():
         if self.code.strip() == "":
             isCode = self.dictCode[0][0]
             codeStr = self.dictCode[1][0]
-            codeCorrect = ""
+            codeCorrect = self.dictCode[2][0]
+            symbAdd = self.icons[2][0]
         else:
             codeRe = re.sub(r'[^a-zA-Z0-9]', '', self.code)
             testOne = is_valid_cnpj(codeRe)
             testTwo = is_valid_cpf(codeRe)
             codeStr = self.dictCode[1][0]
-            codeCorrect = ""
+            codeCorrect = self.dictCode[2][0]
             if testOne: 
                 isCode = self.dictCode[0][1]                
             else:
@@ -217,15 +218,20 @@ class acessories():
                         codeCorrect = self.dictCode[2][0]                   
         codesYes = self.dictCode[0][1:3] + self.dictCode[1][1:2]
         codesYesStr = " ".join(codesYes)
-        #self.icons = {0: ["✔️", "certo"], 1: ["❌", "errado"], 2: ["🚫", "vazio"]}
         words = ["inexistente", "inválido", "sem", "errada", "não"]
+        valCodes = [isCode, codeStr, codeCorrect]
         symbAdd = self.icons[0][0]
-        for testCode in [isCode, codeStr, codeCorrect]: 
+        for valCode in valCodes: 
             for word in words: 
-                if testCode.find(testCode) >= 0: 
+                if valCode.find(word) >= 0: 
                     symbAdd = self.icons[1][0]
                     break
-        exprData = f"{self.code}; {isCode}; {codeStr}; {codeCorrect} {symbAdd}"
+        if self.code.strip() == "":
+            symbAdd = f"{self.icons[3][0]} {self.icons[2][0]}"
+            exprData = f"{isCode}; {codeStr}; {codeCorrect} {symbAdd}"
+        else:
+            symbAdd = f"{self.icons[3][0]} {symbAdd}"
+            exprData = f"{self.code}; {isCode}; {codeStr}; {codeCorrect} {symbAdd}"
         return exprData       
             
 class displayQuery():
@@ -359,7 +365,8 @@ class displayQuery():
         self.colsParty = [25]
         self.colState = [26]
         self.colsTypeNum = [27]
-        self.icons = {0: ["✔️", "certo"], 1: ["❌", "errado"], 2: ["🚫", "vazio"]}
+        self.icons = {0: ["✔️", "certo"], 1: ["❌", "errado"], 2: ["🚫", "vazio"], 
+                      3: ["ℹ️", "essencial"]}
         self.placeText = acessories(None).definePlace()
         objDisplay = displayQuery("").setPage(1)
         for self.s, self.selDf in enumerate(self.allSelDf):
@@ -415,9 +422,11 @@ class displayQuery():
             st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
         else:
             st.dataframe(data=self.dfCopy.iloc[[u]], width="stretch", hide_index=True)
+        urlEmpty = False
         urlExist = False
         colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
         if url.strip() == '':
+            urlEmpty = True
             if self.categ in [0, 1]:
                 st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
         else:
@@ -460,9 +469,11 @@ class displayQuery():
             iconStr = '  '.join([f"{w[0]} ({w[1]})" for w in self.icons.values()])
             dfError = acessories(None).checkDfError(ur, urlExist, self.cols, self.icons)
             (colError, ) = st.columns(1, vertical_alignment="center", width="stretch", border=False)
+            st.write(f"url vazia? {urlEmpty}")
+            st.write(f"url falha? {urlExist}")
             with colError:
                 st.markdown(f":material/analytics: _análise e avaliação dos dados referentes ao_ {exprLancUr} │ {iconStr}", width="stretch", text_alignment="left")
-                st.dataframe(data=dfError, width="stretch", hide_index=True)
+                st.dataframe(data=dfError, width="content", hide_index=True)
     
     def organizeDf(self):
         keyDfAll = f"{self.cont}_all"
