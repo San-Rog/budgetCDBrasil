@@ -157,30 +157,70 @@ class acessories():
         placeText = f"{symbs[0]} Executando rotinas do app.<br>{symbs[1]} Aguarde, por favor!" 
         return placeText
     
-    def checkDfError(self, dataDf, urlExist, cols, icons): 
-        dfError = []
+    def checkListError(self, dataDf, urlExist, cols, icons): 
+        self.listError = []
         numCode = [2, 4]
+        self.cols = cols
         self.icons = icons
         self.dictCode = {0: ["CNPJ/CPF inexistente", "CNPJ válido", "CPF válido", "CNPJ/CPF inválido"], 
                          1: ["sem formatação", "formatação certa", "formatação errada"], 
                          2: ["não formatável"]}
+        essents = [1, 3, 6, 7, 9, 10, 11, 12, 14, 15, 16, 17, 25, 26, 27, 29, 30, 32]
         for d, data in enumerate(dataDf):
-            if d not in numCode: 
-                if len(data) == 0:
-                    dataStr = self.icons[2][0]
+            if d not in numCode:
+                if d in essents: 
+                    dataStr = f"{data}{self.icons[3][0]}"
+                else: 
+                    dataStr =  data
+                if data.strip() == "": 
+                    dataStr += self.icons[2][0] 
                 else:
-                    dataStr = f"{data} {self.icons[0][0]}"
-                dfError.append(dataStr)
+                    dataStr += self.icons[0][0]
+                self.listError.append(dataStr)
             else:
                 self.code = data
                 exprData = self.checkCodeDf()
-                dfError.append(exprData)
-        dictComb = {}
-        for c, col in enumerate(cols): 
-            dictComb.setdefault(col, [])
-            dictComb[col].append(dfError[c])
-        dfComb = pd.DataFrame(dictComb)
-        return dfComb  
+                self.listError.append(exprData)
+        self.defineCombs()
+        return(self.dfComb, self.dfSymb) 
+    
+    def defineCombs(self):
+        self.dictComb = {}
+        self.dictSymb = {}
+        symbols = [w[0] for w in self.icons.values()]
+        symbObr = symbols[-1] 
+        symbNames = [w[1] for w in self.icons.values()]
+        nameObr = symbNames[-1]
+        for c, col in enumerate(self.cols): 
+            valError = self.listError[c]
+            self.dictComb.setdefault(col, [])
+            self.dictComb[col].append(valError)
+            strSymb = self.changeVal(symbols, valError, symbObr, "",)
+            strName = self.changeVal(symbols, valError, nameObr, "+", symbNames)
+            keyError = f" {strSymb} ({strName})"
+            self.dictSymb.setdefault(keyError, [])
+            self.dictSymb[keyError].append(col)
+        keySymb = list(self.dictSymb.keys())
+        valVal = lambda v: self.dictSymb[v]
+        lenVal = lambda l: len(self.dictSymb[l])
+        nameVal = lambda a: acessories(lenVal(a)).convertNumExt().split()[0].strip().lower()
+        exprVal = lambda w: f"{lenVal(w)} ({nameVal(w)}) campo:" if lenVal(w) == 1 else f"{lenVal(w)} ({nameVal(w)}) campos"
+        newDictSymb = {key:f"{exprVal(key)}:" + ' │ '.join(valVal(key)) for key in keySymb}
+        self.dfComb = pd.DataFrame(self.dictComb)
+        self.dfSymb = pd.DataFrame(newDictSymb, index=[0])
+    
+    def changeVal(self, values, valueData, valueTwo, sign, valuesPlus=None):
+        valueOne = ""
+        for v, value in enumerate(values): 
+            if valueData.find(value) >= 0:
+                if sign == "":
+                    valueOne += value
+                else:
+                    valueOne += valuesPlus[v] if valueOne.strip () == "" else f" {sign} {valuesPlus[v]}"
+        if valueOne.find(valueTwo) >= 0: 
+            valueOne = valueOne.replace(valueTwo, "").replace(sign, "").strip()
+            valueOne = f"{valueTwo}{valueOne}" if sign == "" else f"{valueTwo} {sign} {valueOne}"
+        return valueOne       
     
     def checkCodeDf(self):
         if self.code.strip() == "":
@@ -227,10 +267,10 @@ class acessories():
                     symbAdd = self.icons[1][0]
                     break
         if self.code.strip() == "":
-            symbAdd = f"{self.icons[3][0]} {self.icons[2][0]}"
+            symbAdd = f"{self.icons[3][0]}{self.icons[2][0]}"
             exprData = f"{isCode}; {codeStr}; {codeCorrect} {symbAdd}"
         else:
-            symbAdd = f"{self.icons[3][0]} {symbAdd}"
+            symbAdd = f"{self.icons[3][0]}{symbAdd}"
             exprData = f"{self.code}; {isCode}; {codeStr}; {codeCorrect} {symbAdd}"
         return exprData       
             
@@ -365,7 +405,7 @@ class displayQuery():
         self.colsParty = [25]
         self.colState = [26]
         self.colsTypeNum = [27]
-        self.icons = {0: ["✔️", "certo"], 1: ["❌", "errado"], 2: ["🚫", "vazio"], 
+        self.icons = {0: ["✅", "certo"], 1: ["❌", "errado"], 2: ["🚫", "vazio"], 
                       3: ["ℹ️", "essencial"]}
         self.placeText = acessories(None).definePlace()
         objDisplay = displayQuery("").setPage(1)
@@ -422,11 +462,9 @@ class displayQuery():
             st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
         else:
             st.dataframe(data=self.dfCopy.iloc[[u]], width="stretch", hide_index=True)
-        urlEmpty = False
         urlExist = False
         colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
         if url.strip() == '':
-            urlEmpty = True
             if self.categ in [0, 1]:
                 st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
         else:
@@ -466,15 +504,16 @@ class displayQuery():
                 byteImg = acessories(url).createQrCode(2)
                 colQrUrl.image(byteImg, width="content", link=url)
         if self.categ == 3:
-            iconStr = '  '.join([f"{w[0]} ({w[1]})" for w in self.icons.values()])
-            dfError = acessories(None).checkDfError(ur, urlExist, self.cols, self.icons)
+            iconStr = ' │ '.join([f"{w[0]} _{w[1]}_" for w in self.icons.values()])
+            listError, listSymb = acessories(None).checkListError(ur, urlExist, self.cols, self.icons)
             (colError, ) = st.columns(1, vertical_alignment="center", width="stretch", border=False)
-            st.write(f"url vazia? {urlEmpty}")
-            st.write(f"url falha? {urlExist}")
             with colError:
-                st.markdown(f":material/analytics: _análise e avaliação dos dados referentes ao_ {exprLancUr} │ {iconStr}", width="stretch", text_alignment="left")
-                st.dataframe(data=dfError, width="content", hide_index=True)
-    
+                st.markdown(f":material/analytics: _mapeamento e análise dos dados referentes ao_ {exprLancUr} │ {iconStr}", width="stretch", text_alignment="left")
+                st.dataframe(data=listError, width="content", hide_index=True)
+                st.space(size="small")
+                st.markdown(f":material/join_inner: _condensação dos dados relativos ao_ {exprLancUr}", width="stretch", text_alignment="left")
+                st.dataframe(data=listSymb, width="content", hide_index=True)
+              
     def organizeDf(self):
         keyDfAll = f"{self.cont}_all"
         with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
