@@ -204,7 +204,7 @@ class acessories():
         valVal = lambda v: self.dictSymb[v]
         lenVal = lambda l: len(self.dictSymb[l])
         nameVal = lambda a: acessories(lenVal(a)).convertNumExt().split()[0].strip().lower()
-        exprVal = lambda w: f"{lenVal(w)} ({nameVal(w)}) campo:" if lenVal(w) == 1 else f"{lenVal(w)} ({nameVal(w)}) campos"
+        exprVal = lambda w: f"{lenVal(w)} ({nameVal(w)}) campo" if lenVal(w) == 1 else f"{lenVal(w)} ({nameVal(w)}) campos"
         newDictSymb = {key:f"{exprVal(key)}:" + ' │ '.join(valVal(key)) for key in keySymb}
         self.dfComb = pd.DataFrame(self.dictComb)
         self.dfSymb = pd.DataFrame(newDictSymb, index=[0])
