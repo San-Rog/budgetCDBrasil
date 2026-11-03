@@ -157,7 +157,7 @@ class acessories():
         placeText = f"{symbs[0]} Executando rotinas do app.<br>{symbs[1]} Aguarde, por favor!" 
         return placeText
     
-    def checkListError(self, dataDf, urlExist, cols, icons): 
+    def checkListError(self, dataDf, cols, icons): 
         self.listError = []
         numCode = [2, 4]
         self.cols = cols
@@ -417,7 +417,7 @@ class displayQuery():
                           f"**Detalhamento dos gastos do(a) deputado(a) federal :red[{self.selDf}]**", 
                           f"**Resumo dos gastos pesquisados**"] 
             if self.categ in [3]: 
-                self.addDf[1] = f"**Detalhamento dos erros registrais nos gastos do(a) deputado(a) federal :red[{self.selDf}]**"
+                self.addDf[1] = f"**Detalhamento e análise dos gastos do(a) deputado(a) federal :red[{self.selDf}]**"
             with self.colData.container(border=True, width="stretch", horizontal_alignment="center", 
                                         vertical_alignment="center", key=keyDf): 
                 st.subheader(self.addDf[0], icon=":material/list_alt:", width="stretch", text_alignment="center", anchor=None)
@@ -462,50 +462,45 @@ class displayQuery():
             st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
         else:
             st.dataframe(data=self.dfCopy.iloc[[u]], width="stretch", hide_index=True)
-        urlExist = False
-        colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
-        if url.strip() == '':
-            if self.categ in [0, 1]:
+        if self.categ in [0, 1]:
+            urlExist = False
+            colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
+            if url.strip() == '':
                 st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
-        else:
-            addRec = "(:red[recomenda-se verificação usando as opções _link_ ou _qrcode_ abaixo])"
-            try:
-                helpButt = "Caso não apareça documento algum, tente baixá-lo usando o link ou o qrCode abaixo. " \
-                           "Caso apareça, posicione o mouse sobre a imagem, clicando com o botão direito para copiá-la ou salvá-la."
-                pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
-                if pdfBytes.startswith(b'%PDF-'):
-                    urlExist = True
-                    if self.categ in [0, 1]:
-                        st.markdown(f":material/document_scanner: _documento baixado_", help=helpButt) 
-                else:
-                    pdfBytes = operationFiles(None).seleniumImgPdf(url)
-                    if pdfBytes != "":
+            else:
+                addRec = "(:red[recomenda-se verificação usando as opções _link_ ou _qrcode_ abaixo])"
+                try:
+                    helpButt = "Caso não apareça documento algum, tente baixá-lo usando o link ou o qrCode abaixo. " \
+                               "Caso apareça, posicione o mouse sobre a imagem, clicando com o botão direito para copiá-la ou salvá-la."
+                    pdfBytes = asyncio.run(operationFiles(None).downPdfAsync(url))
+                    if pdfBytes.startswith(b'%PDF-'):
                         urlExist = True
-                        if self.categ in [0, 1]:
-                            st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
-                    else: 
-                        pdfBytes = operationFiles(None).seleniumRendPdf(url)
+                        st.markdown(f":material/document_scanner: _documento baixado_", help=helpButt) 
+                    else:
+                        pdfBytes = operationFiles(None).seleniumImgPdf(url)
                         if pdfBytes != "":
                             urlExist = True
-                            if self.categ in [0, 1]:
-                                st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
-                if self.categ in [0, 1]:
+                            st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
+                        else: 
+                            pdfBytes = operationFiles(None).seleniumRendPdf(url)
+                            if pdfBytes != "":
+                                urlExist = True
+                                if self.categ in [0, 1]:
+                                    st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
                     st.session_state[wordKeys[14]].setdefault(url, [])
                     comboUrl = (self.selDf, contUs.replace('/', '_'), month, year, code, num, self.df.iloc[[u]], pdfBytes) 
                     st.session_state[wordKeys[14]][url].append(comboUrl)
                     st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{self.cont}")
-            except Exception as e:
-                if self.categ in [0, 1]:
+                except Exception as e:
                     eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
                     st.markdown(f":material/document_scanner: _download não gerado_")
                     st.markdown(f":material/globe_2_cancel: {eAdd}", width="stretch")
-            if self.categ in [0, 1]:            
                 colDown.markdown(f":material/download_2: :red[**{url}**]", width="stretch")
                 byteImg = acessories(url).createQrCode(2)
                 colQrUrl.image(byteImg, width="content", link=url)
-        if self.categ == 3:
+        elif self.categ == 3:
             iconStr = ' │ '.join([f"{w[0]} _{w[1]}_" for w in self.icons.values()])
-            listError, listSymb = acessories(None).checkListError(ur, urlExist, self.cols, self.icons)
+            listError, listSymb = acessories(None).checkListError(ur, self.cols, self.icons)
             (colError, ) = st.columns(1, vertical_alignment="center", width="stretch", border=False)
             with colError:
                 st.markdown(f":material/analytics: _mapeamento e análise dos dados referentes ao_ {exprLancUr} │ {iconStr}", width="stretch", text_alignment="left")
@@ -887,7 +882,7 @@ class windowStream():
         dictButtons = {"tela_original": ["original", f"{keyButt}Original", ":material/screen_search_desktop:", "Exibe os dados originais do site."], 
                        "tela_modificada": ["modificada", f"{keyButt}Modify", ":material/edit_square:", f"Exibe os dados com parcial modificação/adaptação de formato. (Conferir campos marcados por um asterisco.)"], 
                        "tela_grapho": ["gráfico", f"{keyButt}Grapho", ":material/insert_chart:", "Plota gráfico com os dados."], 
-                       "tela_errores": ["erros", f"{keyButt}Errores", ":material/report:", "Exibe relatório de erros da base de dados da Câmara Federal."],
+                       "tela_errores": ["análise", f"{keyButt}Errores", ":material/category:", "Exibe, analisa e classifica os dados originais da Câmara Federal."],
                        "tela_pdf": ["pdf", f"{keyButt}Pdf", ":material/picture_as_pdf:", "Gera arquivo PDF."], 
                        "tela_word": ["word", f"{keyButt}Word", ":material/text_snippet:", "Gera arquivo Word."]} 
         keyButtons = list(dictButtons.keys())
