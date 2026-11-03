@@ -2,6 +2,7 @@ import os
 import io
 import re
 import time
+import pymupdf
 import segno
 import httpx
 import locale
@@ -29,6 +30,10 @@ from brutils.ibge.uf import convert_uf_to_name
 from brutils import is_valid_cpf, format_cpf
 from brutils import is_valid_cnpj, format_cnpj
 from selenium import webdriver
+from docx import Document
+from docx.shared import Inches
+from docx.enum.section import WD_ORIENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.print_page_options import PrintOptions
 from streamlit_extras.scroll_to_element import *
@@ -396,7 +401,6 @@ class displayQuery():
             self.textAud += f"{dctText} = {audJoin}"
     
     def screenLaunch(self):
-        self.allDfs = {}
         self.cont = 0
         nAllSelDf = len(self.allSelDf)
         self.allSummary = {}
@@ -409,6 +413,7 @@ class displayQuery():
                       3: ["ℹ️", "essencial"]}
         self.placeText = acessories(None).definePlace()
         objDisplay = displayQuery("").setPage(1)
+        self.allPdfBytes = []
         for self.s, self.selDf in enumerate(self.allSelDf):
             keyDf = f"{self.selDf}_{self.s + 1}"
             self.calcSumAll()
@@ -427,14 +432,13 @@ class displayQuery():
                     colAunch, colSum = st.columns(self.colTwo, border=False, width="stretch")
                     colAunch.markdown(self.exprLanc) 
                     colSum.markdown(self.exprLiq)
-                    if self.categ in [0, 1, 3]:
+                    if self.categ in [0, 1, 3, 5]:
                         if self.categ in [0, 3]: 
                             st.dataframe(data=self.df, width="stretch", hide_index=True)
                         else:
                             self.dfOrig = self.df
                             self.configDataFrame()
                             st.dataframe(data=self.dfCopy, width="stretch", hide_index=True)
-                    self.allDfs[self.selDf] = self.df
                 for url in self.urlDocs:
                     st.subheader(self.addDf[1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)
                     for u, ur in enumerate(url):
@@ -455,6 +459,9 @@ class displayQuery():
                             self.checkUrl(u, ur, contUs, exprLanc)                            
             self.colData.space(size="small")
         self.organizeDf()
+        if self.categ == 5:
+            bufferBio = operationFiles(None).createWord(self.allPdfBytes)
+            displayQuery('Criação de arquivo Word com imagens').downWordImg(bufferBio)
             
     def checkUrl(self, u, ur, contUs, exprLancUr):
         year, code, month, num, url = [ur[1], ur[2], ur[14], ur[16], ur[29]]
@@ -462,7 +469,7 @@ class displayQuery():
             st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
         else:
             st.dataframe(data=self.dfCopy.iloc[[u]], width="stretch", hide_index=True)
-        if self.categ in [0, 1]:
+        if self.categ in [0, 1, 5]:
             urlExist = False
             colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
             if url.strip() == '':
@@ -485,12 +492,13 @@ class displayQuery():
                             pdfBytes = operationFiles(None).seleniumRendPdf(url)
                             if pdfBytes != "":
                                 urlExist = True
-                                if self.categ in [0, 1]:
-                                    st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
+                                st.markdown(f":material/document_scanner: _documento baixado (ou imagem gerada)_", help=helpButt)
                     st.session_state[wordKeys[14]].setdefault(url, [])
                     comboUrl = (self.selDf, contUs.replace('/', '_'), month, year, code, num, self.df.iloc[[u]], pdfBytes) 
                     st.session_state[wordKeys[14]][url].append(comboUrl)
                     st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{self.cont}")
+                    if self.categ == 5: 
+                        self.allPdfBytes.append(pdfBytes)
                 except Exception as e:
                     eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
                     st.markdown(f":material/document_scanner: _download não gerado_")
@@ -591,8 +599,9 @@ class displayQuery():
         self.exprLanc = f":material/topic: :red[**{self.nLanc}**] _lançamento_" if self.nLanc <= 1 else f":material/topic: :red[**{acessories(self.nLanc).convertNumber(0)}**] _lançamentos_"
         self.exprDf = f":material/person_apron: _deputado(a) federal_ :red[**{self.selDf}**]"
         self.valReal = self.sumLiq[0]
-        keysSummary = [("#", self.s+1), ("deputado(a) federal", self.selDf), 
-                       ("lançamentos", self.nLanc), ("despesa líquida geral", self.valReal)]
+        if self.categ == 1:
+            keysSummary = [("#", self.s+1), ("deputado(a) federal", self.selDf), 
+                           ("lançamentos", self.nLanc), ("despesa líquida geral", self.valReal)]
         sumLanc = float(0)
         sumVal = float(0)
         self.colsSummary = []
@@ -739,7 +748,18 @@ class displayQuery():
                             mime="application/zip",
                             key="keyButton_zip", 
                             width="stretch", 
-                            help=nameZip[1])            
+                            help=nameZip[1])
+    
+    @st.dialog(title='_download_ Word', width="medium", icon=":material/file_copy:", 
+               on_dismiss="ignore") 
+    def downWordImg(_self, bioBuffer):
+        colDownWord = st.columns([1.5, 6, 1.5], vertical_alignment="center", width="stretch", border=False) 
+        colDownWord[1].download_button(
+            label="📄 Baixar Arquivo Word",
+            data=bioBuffer,
+            file_name="meu_documento.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
@@ -956,8 +976,10 @@ class windowStream():
                 #objDisplay.filterDf(self.cols)
                 pass
             case 5:
-                #objDisplay.filterDf(self.cols)
-                pass
+                title = f":material/data_table: acesso ao site oficial"
+                objDisplay = displayQuery(title)
+                objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
+                                   self.yearStart, self.yearEnd, value, self.typeExp)
         placeHolder.empty()
     
     def defineMonths(self, num):
@@ -1242,7 +1264,29 @@ class operationFiles():
                     writer.write(buffer)
             return buffer
         except: 
-            return ""        
+            return "" 
+
+    @st.cache_data(show_spinner=False, ttl=30, max_entries=15)
+    def createWord(_self, pdfBytes):
+        doc = Document() 
+        section = doc.sections[0]
+        section.orientation = WD_ORIENT.LANDSCAPE
+        new_width, new_height = section.page_height, section.page_width
+        section.page_width = new_width
+        section.page_height = new_height
+        for pdfByte in pdfBytes: 
+            pdfStream = io.BytesIO(pdfByte)
+            pages = pymupdf.open(stream=pdfStream, filetype="pdf")
+            for p, page in enumerate(pages):
+                pix = page.get_pixmap(dpi=300)  
+                imgBytes = io.BytesIO(pix.tobytes("png"))
+                doc.add_paragraph(f'Página {p + 1}')
+                doc.add_picture(imgBytes, width=Inches(3.5))                
+                doc.add_page_break()
+        bio = io.BytesIO()
+        doc.save(bio)
+        bio.seek(0)
+        return bio
     
 class main():
     def __init__(self):
