@@ -546,8 +546,7 @@ class displayQuery():
             self.cols = self.colsSummary
             self.df = df
             self.sumValues()
-            if self.categ == 1:
-                self.df[self.colsSummary[-1]] = self.df[self.colsSummary[-1]].apply(lambda val: f"{acessories(val).convertNumber(2)}")
+            self.df[self.colsSummary[-1]] = self.df[self.colsSummary[-1]].apply(lambda val: f"{acessories(val).convertNumber(2)}")
             st.dataframe(data=self.df, width="stretch", hide_index=True)
             if self.categ in [0, 1]:
                 displayQuery('Download de comprovantes').copyFile()
@@ -599,16 +598,15 @@ class displayQuery():
         self.exprLanc = f":material/topic: :red[**{self.nLanc}**] _lançamento_" if self.nLanc <= 1 else f":material/topic: :red[**{acessories(self.nLanc).convertNumber(0)}**] _lançamentos_"
         self.exprDf = f":material/person_apron: _deputado(a) federal_ :red[**{self.selDf}**]"
         self.valReal = self.sumLiq[0]
-        if self.categ == 1:
-            keysSummary = [("#", self.s+1), ("deputado(a) federal", self.selDf), 
-                           ("lançamentos", self.nLanc), ("despesa líquida geral", self.valReal)]
+        keysSummary = [("#", self.s+1), ("deputado(a) federal", self.selDf), 
+                       ("lançamentos", self.nLanc), ("despesa líquida geral", self.valReal)]
         sumLanc = float(0)
         sumVal = float(0)
         self.colsSummary = []
         for k, key in enumerate(keysSummary):
             self.colsSummary.append(key[0])
             self.allSummary.setdefault(key[0], [])
-            self.allSummary[key[0]].append (key[1])
+            self.allSummary[key[0]].append(key[1])
         self.exprLiq = f":material/money_bag: _despesa líquida geral de_ :red[**R$ {acessories(self.valReal).convertNumber(1)}**]"
         self.exprLiq += f" (:blue[{(acessories(self.valReal).convertNumExt()).lower()}])"
         
@@ -1277,12 +1275,14 @@ class operationFiles():
         for pdfByte in pdfBytes: 
             pdfStream = io.BytesIO(pdfByte)
             pages = pymupdf.open(stream=pdfStream, filetype="pdf")
-            for p, page in enumerate(pages):
+            for pg, page in enumerate(pages):
                 pix = page.get_pixmap(dpi=300)  
                 imgBytes = io.BytesIO(pix.tobytes("png"))
-                doc.add_paragraph(f'Página {p + 1}')
-                doc.add_picture(imgBytes, width=Inches(3.5))                
-                doc.add_page_break()
+                doc.add_heading(f"Página {pg + 1}", 3)
+                p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER  
+                run = p.add_run()
+                run.add_picture(imgBytes, width=Inches(4))
         bio = io.BytesIO()
         doc.save(bio)
         bio.seek(0)
