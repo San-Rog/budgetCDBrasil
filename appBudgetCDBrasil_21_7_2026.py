@@ -413,8 +413,9 @@ class displayQuery():
                       3: ["ℹ️", "essencial"]}
         self.placeText = acessories(None).definePlace()
         objDisplay = displayQuery("").setPage(1)
-        self.allPdfBytes = []
+        self.allPdfBytes = {}
         for self.s, self.selDf in enumerate(self.allSelDf):
+            self.allPdfBytes.setdefault(self.selDf, [])
             keyDf = f"{self.selDf}_{self.s + 1}"
             self.calcSumAll()
             self.summaryFull()
@@ -437,7 +438,7 @@ class displayQuery():
                             st.dataframe(data=self.df, width="stretch", hide_index=True)
                         else:
                             self.dfOrig = self.df
-                            self.configDataFrame()
+                            self.configDataFrame()                            
                             st.dataframe(data=self.dfCopy, width="stretch", hide_index=True)
                 for url in self.urlDocs:
                     st.subheader(self.addDf[1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)
@@ -468,11 +469,15 @@ class displayQuery():
         if self.categ in [0, 3]:
             st.dataframe(data=self.df.iloc[[u]], width="stretch", hide_index=True)
         else:
-            st.dataframe(data=self.dfCopy.iloc[[u]], width="stretch", hide_index=True)
+            dfCopyUr = self.dfCopy.iloc[[u]]
+            self.allPdfBytes[self.selDf].append(dfCopyUr)
+            st.dataframe(data=dfCopyUr, width="stretch", hide_index=True)
         if self.categ in [0, 1, 5]:
+            pdfBytes = None
             urlExist = False
             colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
             if url.strip() == '':
+                pdfBytes = False
                 st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
             else:
                 addRec = "(:red[recomenda-se verificação usando as opções _link_ ou _qrcode_ abaixo])"
@@ -497,8 +502,6 @@ class displayQuery():
                     comboUrl = (self.selDf, contUs.replace('/', '_'), month, year, code, num, self.df.iloc[[u]], pdfBytes) 
                     st.session_state[wordKeys[14]][url].append(comboUrl)
                     st.pdf(data=pdfBytes, height="stretch", key=f"pdf_{self.cont}")
-                    if self.categ == 5: 
-                        self.allPdfBytes.append(pdfBytes)
                 except Exception as e:
                     eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
                     st.markdown(f":material/document_scanner: _download não gerado_")
@@ -506,6 +509,8 @@ class displayQuery():
                 colDown.markdown(f":material/download_2: :red[**{url}**]", width="stretch")
                 byteImg = acessories(url).createQrCode(2)
                 colQrUrl.image(byteImg, width="content", link=url)
+            if self.categ == 5: 
+                self.allPdfBytes[self.selDf].append(pdfBytes)
         elif self.categ == 3:
             iconStr = ' │ '.join([f"{w[0]} _{w[1]}_" for w in self.icons.values()])
             listError, listSymb = acessories(None).checkListError(ur, self.cols, self.icons)
@@ -1265,24 +1270,37 @@ class operationFiles():
             return "" 
 
     @st.cache_data(show_spinner=False, ttl=30, max_entries=15)
-    def createWord(_self, pdfBytes):
+    def createWord(_self, allDataBytes):
         doc = Document() 
         section = doc.sections[0]
         section.orientation = WD_ORIENT.LANDSCAPE
         new_width, new_height = section.page_height, section.page_width
         section.page_width = new_width
         section.page_height = new_height
-        for pdfByte in pdfBytes: 
-            pdfStream = io.BytesIO(pdfByte)
-            pages = pymupdf.open(stream=pdfStream, filetype="pdf")
-            for pg, page in enumerate(pages):
-                pix = page.get_pixmap(dpi=300)  
-                imgBytes = io.BytesIO(pix.tobytes("png"))
-                doc.add_heading(f"Página {pg + 1}", 3)
-                p = doc.add_paragraph()
-                p.alignment = WD_ALIGN_PARAGRAPH.CENTER  
-                run = p.add_run()
-                run.add_picture(imgBytes, width=Inches(4))
+        keysData = list(allDataBytes.keys())
+        for key in keysData: 
+            data = allDataBytes[key]
+            for d, dat in enumerate(data):
+                if d%2 == 0:
+                    doc.add_heading(f"{key} - reservado para os valores da tabela")
+                    doc.add_page_break()
+                else: 
+                    pdfByte = dat
+                    if any([pdfByte is None, not pdfByte]):
+                        strByte = f"{key} - documento inexistente" if pdfByte is None else f"{key} - download direto falho"
+                        doc.add_heading(strByte)
+                        doc.add_page_break()                
+                        continue
+                    pdfStream = io.BytesIO(pdfByte)
+                    pages = pymupdf.open(stream=pdfStream, filetype="pdf")
+                    for pg, page in enumerate(pages):
+                        pix = page.get_pixmap(dpi=300)  
+                        imgBytes = io.BytesIO(pix.tobytes("png"))
+                        doc.add_heading(f"Página {pg + 1}", 3)
+                        p = doc.add_paragraph()
+                        p.alignment = WD_ALIGN_PARAGRAPH.CENTER  
+                        run = p.add_run()
+                        run.add_picture(imgBytes, width=Inches(4))
         bio = io.BytesIO()
         doc.save(bio)
         bio.seek(0)
