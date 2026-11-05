@@ -754,15 +754,20 @@ class displayQuery():
                             width="stretch", 
                             help=nameZip[1])
     
-    @st.dialog(title='_download_ Word', width="medium", icon=":material/file_copy:", 
+    @st.dialog(title='Cópia para pasta _download_', width="medium", icon=":material/file_copy:", 
                on_dismiss="ignore") 
     def downWordImg(_self, bioBuffer):
+        now = datetime.now()
+        nowStr = now.strftime("%d_%m_%Y_%d_%H_%M_%S")
+        nameWord = [f"cotas_cd_{nowStr}.docx", "Gravará em sua pasta donwloads o arquivo word abaixo."]
         colDownWord = st.columns([1.5, 6, 1.5], vertical_alignment="center", width="stretch", border=False) 
         colDownWord[1].download_button(
-            label="📄 Baixar Arquivo Word",
+            label=f":material/downloading: {nameWord[0]}",
             data=bioBuffer,
-            file_name="meu_documento.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            file_name=nameWord[0],
+            width="stretch", 
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
+            help=nameWord[1],
         )
 
 class windowStream():
@@ -1285,8 +1290,6 @@ class operationFiles():
             nData = len(data)
             dataCols = data[0].columns.tolist()
             nCols = len(dataCols)
-            exprDf = f"Deputado(a) federal {key}"
-            doc.add_heading(exprDf)
             newData = []
             for d, dat in enumerate(data):
                 if d%2 == 0:
@@ -1296,6 +1299,9 @@ class operationFiles():
                     dataCombo.append(dat)
                     newData.append(dataCombo)
             nNews = len(newData)
+            exprDf = f"deputado(a) federal {key}"
+            exprDfAll = f"{exprDf} - {nData} lançamento(s)"
+            doc.add_heading(f"👨🏻‍💻 {exprDfAll}", 2)
             for n in range(nNews):
                 new = newData[n]
                 dataDf = new[0]
@@ -1306,33 +1312,34 @@ class operationFiles():
                 dataUrl = dataDf[dataCol(29)].iloc[0]                
                 dataAllCols.insert(0, ['campo', 'informação'])
                 exprLanc = f"lançamento {n+1}/{nNews}"
-                doc.add_heading(exprDf)
-                doc.add_heading(f"{exprLanc} (tabela)")
+                doc.add_heading(f"📌 {exprDf} - {exprLanc} (tabela)", 5)
                 table = doc.add_table(rows=len(dataAllCols), cols=len(dataAllCols[0]))
                 table.style = 'Table Grid'
+                table.autofit = False
                 table.allow_autofit = False
-                #table.alignment = WD_TABLE_ALIGNMENT.CENTER
-                firstCol = Cm(3)
+                table.alignment = WD_TABLE_ALIGNMENT.CENTER
+                widths = [Cm(5.0), Cm(18.0)]
                 for row in table.rows:
-                    row.cells[0].width = firstCol
+                    for idx, width in enumerate(widths):
+                        row.cells[idx].width = width
                 for i, line in enumerate(dataAllCols):
                     for j, value in enumerate(line):
                         table.cell(i, j).text = str(value)
                 doc.add_page_break()
-                doc.add_heading(exprDf)
                 if any([dataByte is None, not dataByte]):
                     strByte = exprLanc
-                    strByte += f"({dataUrl} - comprovante com download direto falho)" if dataByte is None else f"({dataUrl} - comprovante inexistente)"
-                    doc.add_heading(key)
-                    doc.add_heading(strByte)
+                    strByte += f"comprovante com download direto falho" if dataByte is None else f"comprovante inexistente"
+                    doc.add_heading(f"🚫 {exprDf} ({strByte})", 5)
                     doc.add_page_break()
                 else:
                     pdfStream = io.BytesIO(dataByte)
                     pages = pymupdf.open(stream=pdfStream, filetype="pdf")
+                    nPages = len(pages)
                     for pg, page in enumerate(pages):
                         pix = page.get_pixmap(dpi=300)  
                         imgBytes = io.BytesIO(pix.tobytes("png"))
-                        doc.add_heading(f"{dataUrl} - página {pg + 1}", 3)
+                        exprDoc = f"{exprDf} - {exprLanc} (comprovante {dataUrl} - página {pg + 1}/{nPages})"
+                        doc.add_heading(f"📌 {exprDoc}", 5)
                         p = doc.add_paragraph()
                         p.alignment = WD_ALIGN_PARAGRAPH.CENTER  
                         run = p.add_run()
