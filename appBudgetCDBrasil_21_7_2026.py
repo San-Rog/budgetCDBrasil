@@ -31,9 +31,10 @@ from brutils import is_valid_cpf, format_cpf
 from brutils import is_valid_cnpj, format_cnpj
 from selenium import webdriver
 from docx import Document
-from docx.shared import Inches
+from docx.shared import Inches, Cm
 from docx.enum.section import WD_ORIENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.print_page_options import PrintOptions
 from streamlit_extras.scroll_to_element import *
@@ -1278,25 +1279,60 @@ class operationFiles():
         section.page_width = new_width
         section.page_height = new_height
         keysData = list(allDataBytes.keys())
-        for key in keysData: 
+        dataUrl = ""
+        for k, key in enumerate(keysData): 
             data = allDataBytes[key]
+            nData = len(data)
+            dataCols = data[0].columns.tolist()
+            nCols = len(dataCols)
+            exprDf = f"Deputado(a) federal {key}"
+            doc.add_heading(exprDf)
+            newData = []
             for d, dat in enumerate(data):
                 if d%2 == 0:
-                    doc.add_heading(f"{key} - reservado para os valores da tabela")
+                    dataCombo = []
+                    dataCombo.append(dat)
+                else:
+                    dataCombo.append(dat)
+                    newData.append(dataCombo)
+            nNews = len(newData)
+            for n in range(nNews):
+                new = newData[n]
+                dataDf = new[0]
+                dataByte = new[1]
+                dataCol = lambda w: dataCols[w]
+                dataDfCol = lambda w: dataDf[dataCol(w)].iloc[0]
+                dataAllCols = [[dataCol(w), dataDf[dataCol(w)].iloc[0]] for w in range(nCols)]             
+                dataUrl = dataDf[dataCol(29)].iloc[0]                
+                dataAllCols.insert(0, ['campo', 'informação'])
+                exprLanc = f"lançamento {n+1}/{nNews}"
+                doc.add_heading(exprDf)
+                doc.add_heading(f"{exprLanc} (tabela)")
+                table = doc.add_table(rows=len(dataAllCols), cols=len(dataAllCols[0]))
+                table.style = 'Table Grid'
+                table.allow_autofit = False
+                #table.alignment = WD_TABLE_ALIGNMENT.CENTER
+                firstCol = Cm(3)
+                for row in table.rows:
+                    row.cells[0].width = firstCol
+                for i, line in enumerate(dataAllCols):
+                    for j, value in enumerate(line):
+                        table.cell(i, j).text = str(value)
+                doc.add_page_break()
+                doc.add_heading(exprDf)
+                if any([dataByte is None, not dataByte]):
+                    strByte = exprLanc
+                    strByte += f"({dataUrl} - comprovante com download direto falho)" if dataByte is None else f"({dataUrl} - comprovante inexistente)"
+                    doc.add_heading(key)
+                    doc.add_heading(strByte)
                     doc.add_page_break()
-                else: 
-                    pdfByte = dat
-                    if any([pdfByte is None, not pdfByte]):
-                        strByte = f"{key} - documento inexistente" if pdfByte is None else f"{key} - download direto falho"
-                        doc.add_heading(strByte)
-                        doc.add_page_break()                
-                        continue
-                    pdfStream = io.BytesIO(pdfByte)
+                else:
+                    pdfStream = io.BytesIO(dataByte)
                     pages = pymupdf.open(stream=pdfStream, filetype="pdf")
                     for pg, page in enumerate(pages):
                         pix = page.get_pixmap(dpi=300)  
                         imgBytes = io.BytesIO(pix.tobytes("png"))
-                        doc.add_heading(f"Página {pg + 1}", 3)
+                        doc.add_heading(f"{dataUrl} - página {pg + 1}", 3)
                         p = doc.add_paragraph()
                         p.alignment = WD_ALIGN_PARAGRAPH.CENTER  
                         run = p.add_run()
