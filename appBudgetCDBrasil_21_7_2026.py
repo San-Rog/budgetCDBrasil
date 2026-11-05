@@ -1300,7 +1300,7 @@ class operationFiles():
                     newData.append(dataCombo)
             nNews = len(newData)
             exprDf = f"deputado(a) federal {key}"
-            exprDfAll = f"{exprDf} - {nData} lançamento(s)"
+            exprDfAll = f"{exprDf} - {nNews} lançamento(s)"
             doc.add_heading(f"👨🏻‍💻 {exprDfAll}", 2)
             for n in range(nNews):
                 new = newData[n]
@@ -1328,8 +1328,8 @@ class operationFiles():
                 doc.add_page_break()
                 if any([dataByte is None, not dataByte]):
                     strByte = exprLanc
-                    strByte += f"comprovante com download direto falho" if dataByte is None else f"comprovante inexistente"
-                    doc.add_heading(f"🚫 {exprDf} ({strByte})", 5)
+                    strByte = f"{dataUrl} - comprovante com download direto falho" if dataByte is None else f"comprovante inexistente"
+                    doc.add_heading(f"🚫 {exprDf} - {exprLanc} ({strByte})", 5)
                     doc.add_page_break()
                 else:
                     pdfStream = io.BytesIO(dataByte)
