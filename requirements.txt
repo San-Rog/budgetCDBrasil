@@ -15,3 +15,4 @@ selenium
 pymupdf
 pypdf
 python-docx
+mammoth
