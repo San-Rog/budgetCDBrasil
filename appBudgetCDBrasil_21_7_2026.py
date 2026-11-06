@@ -806,15 +806,15 @@ class displayQuery():
             pdf_path = os.path.join(output_dir, f"{base_name}.pdf")
             with open(pdf_path, "rb") as f:
                 pdf_bytes = f.read()
-            st.success("Conversão realizada com sucesso!")
-            st.download_button(
+            colDownWord[2].success("Conversão realizada com sucesso!")
+            colDownWord[2].download_button(
                 label="Baixar PDF",
                 data=pdf_bytes,
                 file_name=f"{base_name}.pdf",
                 mime="application/pdf",
             )
         except Exception as e:
-            st.error(f"Erro na conversão: {e}")        
+            colDownWord[2].error(f"Erro na conversão: {e}")        
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
