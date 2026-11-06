@@ -782,11 +782,11 @@ class displayQuery():
             dataKey = allDataBytes[key]
             summKeys +=  dataKey
             exprLanc = "lançamentos" if dataKey > 1 else "lançamento"
-            exprDf = f":material/person_3: {acessories(dataKey).convertNumber(0)} {exprLanc} do(a) deputado(a) federal {key}<br>"
+            exprDf = f":material/person_3: {acessories(dataKey).convertNumber(0)} {exprLanc} do(a) deputado(a) federal {key}"
             st.markdown(exprDf, unsafe_allow_html=True)
         if len(keys) > 1:
             exprLanc = "lançamentos" if summKeys > 1 else "lançamento"
-            exprDf = f":material/functions: {acessories(summKeys).convertNumber(0)} {exprLanc} (total)<br>"
+            exprDf = f":material/functions: {acessories(summKeys).convertNumber(0)} {exprLanc} (total)"
             st.markdown(exprDf, unsafe_allow_html=True)
         colDownWord = st.columns([1.5, 6, 1.5], vertical_alignment="center", width="stretch", border=False) 
         if categ == 5:
