@@ -6,15 +6,14 @@ import pymupdf
 import segno
 import httpx
 import locale
-import tempfile
 import base64
 import psutil
 import sqlite3
 import zipfile
 import asyncio
 import calendar
-import subprocess
-import tempfile
+import mammoth
+from xhtml2pdf import pisa
 import pandas as pd
 from gtts import gTTS
 import streamlit as st
@@ -34,6 +33,7 @@ from brutils import is_valid_cpf, format_cpf
 from brutils import is_valid_cnpj, format_cnpj
 from selenium import webdriver
 from docx import Document
+from docx.shared import Pt
 from docx.shared import Inches, Cm
 from docx.enum.section import WD_ORIENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -437,7 +437,7 @@ class displayQuery():
                     colAunch, colSum = st.columns(self.colTwo, border=False, width="stretch")
                     colAunch.markdown(self.exprLanc) 
                     colSum.markdown(self.exprLiq)
-                    if self.categ in [0, 1, 3, 5]:
+                    if self.categ in [0, 1, 3, 4, 5]:
                         if self.categ in [0, 3]: 
                             st.dataframe(data=self.df, width="stretch", hide_index=True)
                         else:
@@ -464,9 +464,18 @@ class displayQuery():
                             self.checkUrl(u, ur, contUs, exprLanc)                            
             self.colData.space(size="small")
         self.organizeDf()
-        if self.categ == 5:
-            bufferBio, allKeyData = operationFiles(None).createWord(self.allPdfBytes)
-            displayQuery('Criação de arquivo Word com imagens').downWordImg(bufferBio, allKeyData)
+        if self.categ in [4, 5]:
+            bufferBio, allKeyData = operationFiles(None).createWord(self.allPdfBytes, self.categ)
+            if self.categ == 4: 
+                result = mammoth.convert_to_html(bufferBio)
+                bufferBio.seek(0)
+                html_content = result.value
+                pdfBuffer = io.BytesIO()            
+                pisa_status = pisa.CreatePDF(html_content, dest=pdfBuffer)
+                pdfBuffer.seek(0)
+                displayQuery('Criação de arquivo Word com imagens').downWordPdfImg(pdfBuffer, allKeyData, self.categ)
+            else:        
+                displayQuery('Criação de arquivo Word com imagens').downWordPdfImg(bufferBio, allKeyData, self.categ)
             
     def checkUrl(self, u, ur, contUs, exprLancUr):
         year, code, month, num, url = [ur[1], ur[2], ur[14], ur[16], ur[29]]
@@ -476,7 +485,7 @@ class displayQuery():
             dfCopyUr = self.dfCopy.iloc[[u]]
             self.allPdfBytes[self.selDf].append(dfCopyUr)
             st.dataframe(data=dfCopyUr, width="stretch", hide_index=True)
-        if self.categ in [0, 1, 5]:
+        if self.categ in [0, 1, 4, 5]:
             pdfBytes = None
             urlExist = False
             colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
@@ -513,7 +522,7 @@ class displayQuery():
                 colDown.markdown(f":material/download_2: :red[**{url}**]", width="stretch")
                 byteImg = acessories(url).createQrCode(2)
                 colQrUrl.image(byteImg, width="content", link=url)
-            if self.categ == 5: 
+            if self.categ in [4, 5]: 
                 self.allPdfBytes[self.selDf].append(pdfBytes)
         elif self.categ == 3:
             iconStr = ' │ '.join([f"{w[0]} _{w[1]}_" for w in self.icons.values()])
@@ -759,10 +768,13 @@ class displayQuery():
     
     @st.dialog(title='Cópia para pasta _download_', width="medium", icon=":material/file_copy:", 
                on_dismiss="ignore") 
-    def downWordImg(_self, bioBuffer, allDataBytes):
+    def downWordPdfImg(_self, fileBuffer, allDataBytes, categ):
         now = datetime.now()
         nowStr = now.strftime("%d_%m_%Y_%d_%H_%M_%S")
-        nameWord = [f"cotas_cd_{nowStr}.docx", "Gravará em sua pasta donwloads o arquivo word abaixo."]
+        if categ == 5:
+            nameFile = [f"cotas_cd_{nowStr}.docx", "Gravará em sua pasta donwloads o arquivo word abaixo."]
+        else: 
+            nameFile = [f"cotas_cd_{nowStr}.pdf", "Gravará em sua pasta donwloads o arquivo pdf abaixo."]
         keys = list(allDataBytes.keys())
         nKeys = len(keys) 
         summKeys = 0
@@ -777,44 +789,24 @@ class displayQuery():
             exprDf = f":material/functions: {acessories(summKeys).convertNumber(0)} {exprLanc} (total)<br>"
             st.markdown(exprDf, unsafe_allow_html=True)
         colDownWord = st.columns([1.5, 6, 1.5], vertical_alignment="center", width="stretch", border=False) 
-        colDownWord[1].download_button(
-            label=f":material/downloading: {nameWord[0]}",
-            data=bioBuffer,
-            file_name=nameWord[0],
-            width="stretch", 
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
-            help=nameWord[1],
-        )
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp_docx:
-            tmp_docx.write(bioBuffer)
-            tmp_docx_path = tmp_docx.name
-        output_dir = tempfile.mkdtemp()
-        try:
-            subprocess.run(
-                [
-                  "libreoffice",
-                  "--headless",
-                  "--convert-to",
-                  "pdf",
-                  tmp_docx_path,
-                  "--outdir",
-                  output_dir,
-                ],
-                check=True,
+        if categ == 5:
+            colDownWord[1].download_button(
+                label=f":material/downloading: {nameFile[0]}",
+                data=fileBuffer,
+                file_name=nameFile[0],
+                width="stretch", 
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
+                help=nameFile[1],
             )
-            base_name = os.path.splitext(os.path.basename(tmp_docx_path))[0]
-            pdf_path = os.path.join(output_dir, f"{base_name}.pdf")
-            with open(pdf_path, "rb") as f:
-                pdf_bytes = f.read()
-            colDownWord[2].success("Conversão realizada com sucesso!")
-            colDownWord[2].download_button(
-                label="Baixar PDF",
-                data=pdf_bytes,
-                file_name=f"{base_name}.pdf",
-                mime="application/pdf",
+        else:
+            colDownWord[1].download_button(
+                label=f":material/downloading: {nameFile[0]}",
+                data=fileBuffer,
+                file_name=nameFile[0],
+                width="stretch", 
+                mime="application/pdf", 
+                help=nameFile[1]
             )
-        except Exception as e:
-            colDownWord[2].error(f"Erro na conversão: {e}")        
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
@@ -1028,8 +1020,10 @@ class windowStream():
                 objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
                                    self.yearStart, self.yearEnd, value, self.typeExp)
             case 4:
-                #objDisplay.filterDf(self.cols)
-                pass
+                title = f":material/data_table: acesso ao site oficial"
+                objDisplay = displayQuery(title)
+                objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
+                                   self.yearStart, self.yearEnd, value, self.typeExp)
             case 5:
                 title = f":material/data_table: acesso ao site oficial"
                 objDisplay = displayQuery(title)
@@ -1322,7 +1316,7 @@ class operationFiles():
             return "" 
 
     @st.cache_data(show_spinner=False, ttl=30, max_entries=15)
-    def createWord(_self, allDataBytes):
+    def createWord(_self, allDataBytes, categ):
         doc = Document() 
         section = doc.sections[0]
         section.orientation = WD_ORIENT.LANDSCAPE
