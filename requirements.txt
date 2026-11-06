@@ -16,3 +16,4 @@ pymupdf
 pypdf
 python-docx
 mammoth
+xhtml2pdf
