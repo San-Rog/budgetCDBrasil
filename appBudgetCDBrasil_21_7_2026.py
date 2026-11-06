@@ -6,12 +6,15 @@ import pymupdf
 import segno
 import httpx
 import locale
+import tempfile
 import base64
 import psutil
 import sqlite3
 import zipfile
 import asyncio
 import calendar
+import subprocess
+import tempfile
 import pandas as pd
 from gtts import gTTS
 import streamlit as st
@@ -462,8 +465,8 @@ class displayQuery():
             self.colData.space(size="small")
         self.organizeDf()
         if self.categ == 5:
-            bufferBio = operationFiles(None).createWord(self.allPdfBytes)
-            displayQuery('Criação de arquivo Word com imagens').downWordImg(bufferBio)
+            bufferBio, allKeyData = operationFiles(None).createWord(self.allPdfBytes)
+            displayQuery('Criação de arquivo Word com imagens').downWordImg(bufferBio, allKeyData)
             
     def checkUrl(self, u, ur, contUs, exprLancUr):
         year, code, month, num, url = [ur[1], ur[2], ur[14], ur[16], ur[29]]
@@ -756,10 +759,23 @@ class displayQuery():
     
     @st.dialog(title='Cópia para pasta _download_', width="medium", icon=":material/file_copy:", 
                on_dismiss="ignore") 
-    def downWordImg(_self, bioBuffer):
+    def downWordImg(_self, bioBuffer, allDataBytes):
         now = datetime.now()
         nowStr = now.strftime("%d_%m_%Y_%d_%H_%M_%S")
         nameWord = [f"cotas_cd_{nowStr}.docx", "Gravará em sua pasta donwloads o arquivo word abaixo."]
+        keys = list(allDataBytes.keys())
+        nKeys = len(keys) 
+        summKeys = 0
+        for key in keys: 
+            dataKey = allDataBytes[key]
+            summKeys +=  dataKey
+            exprLanc = "lançamentos" if dataKey > 1 else "lançamento"
+            exprDf = f":material/person_3: {acessories(dataKey).convertNumber(0)} {exprLanc} do(a) deputado(a) federal {key}<br>"
+            st.markdown(exprDf, unsafe_allow_html=True)
+        if len(keys) > 1:
+            exprLanc = "lançamentos" if summKeys > 1 else "lançamento"
+            exprDf = f":material/functions: {acessories(summKeys).convertNumber(0)} {exprLanc} (total)<br>"
+            st.markdown(exprDf, unsafe_allow_html=True)
         colDownWord = st.columns([1.5, 6, 1.5], vertical_alignment="center", width="stretch", border=False) 
         colDownWord[1].download_button(
             label=f":material/downloading: {nameWord[0]}",
@@ -769,6 +785,36 @@ class displayQuery():
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
             help=nameWord[1],
         )
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp_docx:
+            tmp_docx.write(bioBuffer)
+            tmp_docx_path = tmp_docx.name
+        output_dir = tempfile.mkdtemp()
+        try:
+            subprocess.run(
+                [
+                  "libreoffice",
+                  "--headless",
+                  "--convert-to",
+                  "pdf",
+                  tmp_docx_path,
+                  "--outdir",
+                  output_dir,
+                ],
+                check=True,
+            )
+            base_name = os.path.splitext(os.path.basename(tmp_docx_path))[0]
+            pdf_path = os.path.join(output_dir, f"{base_name}.pdf")
+            with open(pdf_path, "rb") as f:
+                pdf_bytes = f.read()
+            st.success("Conversão realizada com sucesso!")
+            st.download_button(
+                label="Baixar PDF",
+                data=pdf_bytes,
+                file_name=f"{base_name}.pdf",
+                mime="application/pdf",
+            )
+        except Exception as e:
+            st.error(f"Erro na conversão: {e}")        
 
 class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
@@ -1285,6 +1331,7 @@ class operationFiles():
         section.page_height = new_height
         keysData = list(allDataBytes.keys())
         dataUrl = ""
+        newKeyData = {}
         for k, key in enumerate(keysData): 
             data = allDataBytes[key]
             nData = len(data)
@@ -1299,6 +1346,7 @@ class operationFiles():
                     dataCombo.append(dat)
                     newData.append(dataCombo)
             nNews = len(newData)
+            newKeyData[key] = nNews
             exprDf = f"deputado(a) federal {key}"
             exprDfAll = f"{exprDf} - {nNews} lançamento(s)"
             doc.add_heading(f"👨🏻‍💻 {exprDfAll}", 2)
@@ -1347,7 +1395,7 @@ class operationFiles():
         bio = io.BytesIO()
         doc.save(bio)
         bio.seek(0)
-        return bio
+        return(bio, newKeyData)
     
 class main():
     def __init__(self):
