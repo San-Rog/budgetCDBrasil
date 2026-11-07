@@ -1355,10 +1355,12 @@ class operationFiles():
                 dataByte = new[1]
                 dataCol = lambda w: dataCols[w]
                 dataDfCol = lambda w: dataDf[dataCol(w)].iloc[0]
+                dataSize = [dataCol(w) + '.'*nSymb*6 for w in range(nCols)]
+                wordAlign = [s[:nSymb*4] for s in dataSize]
                 if categ == 5:
                     dataAllCols = [[dataCol(w), dataDf[dataCol(w)].iloc[0]] for w in range(nCols)]             
                 else:
-                    dataAllCols = [[dataCol(w) + f"{'.'*nSymb*3}".rjust(nSymb*4, " "), dataDf[dataCol(w)].iloc[0]] for w in range(nCols)] 
+                    dataAllCols = [[wordAlign[w], dataDf[dataCol(w)].iloc[0]] for w in range(nCols)] 
                 dataUrl = dataDf[dataCol(29)].iloc[0]                
                 dataAllCols.insert(0, ['campo', 'informação'])
                 if categ == 4:
