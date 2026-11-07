@@ -1347,6 +1347,7 @@ class operationFiles():
             exprDfAll = f"{exprDf} - {nNews} lançamento(s)"
             doc.add_heading(f"👨🏻‍💻 {exprDfAll}", 2)
             for n in range(nNews):
+                valRang = 30 if n == 0 else 29
                 new = newData[n]
                 dataDf = new[0]
                 dataByte = new[1]
@@ -1355,6 +1356,9 @@ class operationFiles():
                 dataAllCols = [[dataCol(w), dataDf[dataCol(w)].iloc[0]] for w in range(nCols)]             
                 dataUrl = dataDf[dataCol(29)].iloc[0]                
                 dataAllCols.insert(0, ['campo', 'informação'])
+                if categ == 4:
+                    for w in range(valRang): 
+                        dataAllCols.append(['-------', '-------'])
                 exprLanc = f"lançamento {n+1}/{nNews}"
                 doc.add_heading(f"📌 {exprDf} - {exprLanc} (tabela)", 5)
                 table = doc.add_table(rows=len(dataAllCols), cols=len(dataAllCols[0]))
@@ -1372,8 +1376,10 @@ class operationFiles():
                 doc.add_page_break()
                 if any([dataByte is None, not dataByte]):
                     strByte = exprLanc
-                    strByte = f"{dataUrl} - comprovante com download direto falho" if dataByte is None else f"comprovante inexistente"
+                    strByte = f"comprovante com download direto falho" if dataByte is None else "comprovante inexistente"
                     doc.add_heading(f"🚫 {exprDf} - {exprLanc} ({strByte})", 5)
+                    if categ == 4:
+                        doc.add_heading('-----------------------')
                     doc.add_page_break()
                 else:
                     pdfStream = io.BytesIO(dataByte)
@@ -1382,7 +1388,7 @@ class operationFiles():
                     for pg, page in enumerate(pages):
                         pix = page.get_pixmap(dpi=300)  
                         imgBytes = io.BytesIO(pix.tobytes("png"))
-                        exprDoc = f"{exprDf} - {exprLanc} (comprovante {dataUrl} - página {pg + 1}/{nPages})"
+                        exprDoc = f"{exprDf} - {exprLanc} (comprovante - página {pg + 1}/{nPages})"
                         doc.add_heading(f"📌 {exprDoc}", 5)
                         p = doc.add_paragraph()
                         p.alignment = WD_ALIGN_PARAGRAPH.CENTER  
