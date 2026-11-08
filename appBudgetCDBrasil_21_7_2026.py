@@ -2,17 +2,19 @@ import os
 import io
 import re
 import time
-import pymupdf
 import segno
 import httpx
+import random
 import locale
 import base64
 import psutil
 import sqlite3
+import pymupdf
 import zipfile
 import asyncio
 import calendar
 import mammoth
+import edge_tts
 from xhtml2pdf import pisa
 import pandas as pd
 from gtts import gTTS
@@ -351,8 +353,8 @@ class displayQuery():
         nSelDf = len(allSelDf)
         numStr = f"{nSelDf} deputado federal" if nSelDf <= 1 else f"{nSelDf} deputados federais" 
         self.nSelDf = nSelDf
-        self.colTwoOne = [20, 4]
-        self.colTwoTwo = [20, 4]
+        self.colThreeOne = [16, 4, 4]
+        self.colThreeTwo = self.colThreeOne
         self.colTwo = [4, 10]
         self.allSelDf, self.colData, self.start, self.end = (allSelDf, colData, start, end)
         self.cols, self.results = (cols, results)
@@ -385,13 +387,16 @@ class displayQuery():
                                 )
                             }, hide_index=True) 
             st.space(size="small")
-            colOrig, colQrOrig = st.columns(self.colTwoOne, vertical_alignment="center", width="stretch", border=False)
+            colOrig, colQrOrig, colAudOrig = st.columns(self.colThreeOne, vertical_alignment="center", width="stretch", border=False)
             linkOrig = '.'.join(dataAllSplit[0])
             colOrig.markdown(f":material/link: {linkOrig}", unsafe_allow_html=True, 
                              width="stretch", text_alignment="left")
             byteImg = acessories(linkOrig).createQrCode(2)
             colQrOrig.image(byteImg, width="content", link=linkOrig)
             textAud = f"Para acessar o site oficial, dê um clique no link {linkOrig} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
+            voice = random.choice(voicesOpts)
+            audData = asyncio.run(operationFiles(None).createAudVoice(textAud, voice)) 
+            colAudOrig.audio(audData, format="audio/mp3", width="stretch")
                 
     def dictCols(self):
         self.dictTextAud = {}
@@ -488,7 +493,6 @@ class displayQuery():
         if self.categ in [0, 1, 4, 5]:
             pdfBytes = None
             urlExist = False
-            colDown, colQrUrl = st.columns(self.colTwoTwo, vertical_alignment="center", width="stretch", border=False)
             if url.strip() == '':
                 pdfBytes = False
                 st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
@@ -519,9 +523,14 @@ class displayQuery():
                     eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
                     st.markdown(f":material/document_scanner: _download não gerado_")
                     st.markdown(f":material/globe_2_cancel: {eAdd}", width="stretch")
+                colDown, colQrUrl, colAudUrl = st.columns(self.colThreeTwo, vertical_alignment="center", width="stretch", border=False)      
                 colDown.markdown(f":material/download_2: :red[**{url}**]", width="stretch")
                 byteImg = acessories(url).createQrCode(2)
                 colQrUrl.image(byteImg, width="content", link=url)
+                textAud = f"Para tentar fazer download, dê um clique no link {url} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
+                voice = random.choice(voicesOpts)
+                audData = asyncio.run(operationFiles(None).createAudVoice(textAud, voice)) 
+                colAudUrl.audio(audData, format="audio/mp3", width="stretch")
             if self.categ in [4, 5]: 
                 self.allPdfBytes[self.selDf].append(pdfBytes)
         elif self.categ == 3:
@@ -1214,6 +1223,15 @@ class operationFiles():
                         raise e
                     await asyncio.sleep(delay)
                     delay *= 1.5  
+    
+    async def createAudVoice(self, text: str, voice: str) -> bytes:
+        communicate = edge_tts.Communicate(text, voice)
+        audio_buffer = io.BytesIO()
+        async for chunk in communicate.stream():
+            if chunk["type"] == "audio":
+                audio_buffer.write(chunk["data"])
+        audio_buffer.seek(0)
+        return audio_buffer.read()
                     
     @st.cache_data(show_spinner=False, ttl=30, max_entries=15)
     def seleniumImgPdf(_self, urlDown): 
@@ -1485,6 +1503,7 @@ class main():
 if __name__ == '__main__':
     global wordKeys, seps
     global helpPlace, textPlaceAll
+    global voicesOpts             
     helpPlace = {1:[":material/date_range:", "data inicial", "Selecione a data inicial (mês e ano).", 5, 6, "ano", "mês"], 
                  2:[":material/date_range:", "data final", "Selecione a data final (mês e ano).", 7, 8, "ano", "mês"], 
                  3:[":material/flag:", "estado", "Selecione uma unidade federativa por vez", 9, "sigla"], 
@@ -1494,6 +1513,7 @@ if __name__ == '__main__':
     wordKeys = ['count', 'enableMonthStart', 'enableYearEnd', 'enableMonthEnd', 
                 'enableUfs', 'valYearStart', 'valMonthStart', 'valYearEnd', 'valMonthEnd', 
                 'valUf', 'valDf', 'countSearch', 'allFillters', 'lastKey', 'allPdfBytes']
+    voicesOpts = ["pt-BR-FranciscaNeural", "pt-BR-AntonioNeural"]
     for w, wordKey in enumerate(wordKeys):
         if w == 0:
             val = 0
