@@ -17,3 +17,4 @@ pypdf
 python-docx
 mammoth
 xhtml2pdf
+edge-tts
