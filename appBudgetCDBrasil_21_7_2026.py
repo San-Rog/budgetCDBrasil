@@ -675,7 +675,6 @@ class displayQuery():
     def filterDf(self, cols):
         colsMark = [w for w in range(len(cols))]
         df = pd.DataFrame({"Filtros": cols})
-        
         evento = st.dataframe(df, key="tabela", on_select="rerun", 
                               selection_mode="multi-row", selection_default={"selection": {"rows":colsMark}})
         linhas_selecionadas = evento.selection.rows
@@ -1368,10 +1367,26 @@ class operationFiles():
             exprDfAll = f"{exprDf} - {nNews} lançamento(s)"
             doc.add_heading(f"👨🏻‍💻 {exprDfAll}", 2)
             for n in range(nNews):
-                valRang = 31 if n == 0 else 32
                 new = newData[n]
                 dataDf = new[0]
                 dataByte = new[1]
+                jump = any([dataByte is None, not dataByte])
+                valRang = 29 if n == 0 else 31
+                if jump: 
+                    valRang += 1
+                try:
+                    newPos = newData[n-1]
+                    dataBytePos = newPos[1]
+                    jumpPos = any([dataBytePos is None, not dataBytePos])
+                    if not jumpPos: 
+                        valRang += 1
+                    if jump: 
+                       valRang -= 1
+                    else:
+                        valRang += 1
+                except: 
+                    if jump: 
+                       valRang += 1
                 dataCol = lambda w: dataCols[w]
                 dataDfCol = lambda w: dataDf[dataCol(w)].iloc[0]
                 dataSize = [dataCol(w) + '.'*nSymb*6 for w in range(nCols)]
@@ -1400,7 +1415,7 @@ class operationFiles():
                     for j, value in enumerate(line):
                         table.cell(i, j).text = str(value)
                 doc.add_page_break()
-                if any([dataByte is None, not dataByte]):
+                if jump:
                     strByte = exprLanc
                     if categ == 5:
                         strByte = f"{dataUrl} - comprovante com download direto falho" if dataByte is None else f"comprovante inexistente"
