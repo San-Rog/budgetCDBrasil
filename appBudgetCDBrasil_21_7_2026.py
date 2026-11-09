@@ -1385,7 +1385,7 @@ class operationFiles():
                     else:
                         valRang += 1
                 except: 
-                    if jump: 
+                    if jump and n != 0: 
                        valRang += 1
                 dataCol = lambda w: dataCols[w]
                 dataDfCol = lambda w: dataDf[dataCol(w)].iloc[0]
