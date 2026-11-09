@@ -493,6 +493,7 @@ class displayQuery():
         if self.categ in [0, 1, 4, 5]:
             pdfBytes = None
             urlExist = False
+            colDown, colQrUrl, colAudOrig = st.columns(self.colThreeTwo, vertical_alignment="center", width="stretch", border=False)
             if url.strip() == '':
                 pdfBytes = False
                 st.markdown(f":material/ad_off: _link para download do comprovante de despesa não cadastrado._")
@@ -530,7 +531,7 @@ class displayQuery():
                 textAud = f"Para tentar fazer download, dê um clique no link {url} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
                 voice = random.choice(voicesOpts)
                 audData = asyncio.run(operationFiles(None).createAudVoice(textAud, voice)) 
-                colAudUrl.audio(audData, format="audio/mp3", width="stretch")
+                colAudOrig.audio(audData, format="audio/mp3", width="stretch")
             if self.categ in [4, 5]: 
                 self.allPdfBytes[self.selDf].append(pdfBytes)
         elif self.categ == 3:
