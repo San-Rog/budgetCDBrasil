@@ -531,7 +531,7 @@ class displayQuery():
                 textAud = f"Para tentar fazer download, dê um clique no link {url} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
                 voice = random.choice(voicesOpts)
                 audData = asyncio.run(operationFiles(None).createAudVoice(textAud, voice)) 
-                colAudOrig.audio(audData, format="audio/mp3", width="stretch")
+                colAudUrl.audio(audData, format="audio/mp3", width="stretch")
             if self.categ in [4, 5]: 
                 self.allPdfBytes[self.selDf].append(pdfBytes)
         elif self.categ == 3:
