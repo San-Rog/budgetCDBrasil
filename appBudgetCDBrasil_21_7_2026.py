@@ -902,7 +902,7 @@ class windowStream():
                               vertical_alignment="center"):
                 strStart = self.formatLabel(dictVal[0], dictVal[3], dictVal[1])
                 st.markdown(strStart, unsafe_allow_html=True, text_alignment="left", 
-                            anchors=True, help=f"{dictVal[2]} ({nOptUfs} existentes)")
+                            anchors=True, help=f"{dictVal[2]} ({nOptUfs} existentes.)")
                 if all([self.yearStart, self.monthStart, self.yearEnd, self.monthEnd]):
                     st.session_state[wordKeys[4]] = False
                 else:
