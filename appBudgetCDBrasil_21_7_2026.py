@@ -355,6 +355,8 @@ class displayQuery():
         self.nSelDf = nSelDf
         self.colThreeOne = [16, 4, 4]
         self.colThreeTwo = self.colThreeOne
+        self.colThreeOneAlt = [20, 4]
+        self.colThreeTwoAlt = self.colThreeOneAlt
         self.colTwo = [4, 10]
         self.allSelDf, self.colData, self.start, self.end = (allSelDf, colData, start, end)
         self.cols, self.results = (cols, results)
@@ -387,17 +389,23 @@ class displayQuery():
                                 )
                             }, hide_index=True) 
             st.space(size="small")
-            colOrig, colQrOrig, colAudOrig = st.columns(self.colThreeOne, vertical_alignment="center", width="stretch", border=False)
+            try:
+                colOrig, colQrOrig, colAudOrig = st.columns(self.colThreeOne, vertical_alignment="center", width="stretch", border=False)
+                textAud = f"Para acessar o site oficial, dê um clique no link {linkOrig} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
+                voice = random.choice(voicesOpts)
+                audData = asyncio.run(operationFiles(None).createAudVoice(textAud, voice)) 
+                audExist = True
+            except: 
+                audExist = False
+                colOrig, colQrOrig = st.columns(self.colThreeOneAlt, vertical_alignment="center", width="stretch", border=False)
             linkOrig = '.'.join(dataAllSplit[0])
             colOrig.markdown(f":material/link: {linkOrig}", unsafe_allow_html=True, 
                              width="stretch", text_alignment="left")
             byteImg = acessories(linkOrig).createQrCode(2)
-            colQrOrig.image(byteImg, width="content", link=linkOrig)
-            textAud = f"Para acessar o site oficial, dê um clique no link {linkOrig} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
-            voice = random.choice(voicesOpts)
-            audData = asyncio.run(operationFiles(None).createAudVoice(textAud, voice)) 
-            colAudOrig.audio(audData, format="audio/mp3", width="stretch")
-                
+            colQrOrig.image(byteImg, width="content", link=linkOrig)            
+            if audExist: 
+                colAudOrig.audio(audData, format="audio/mp3", width="stretch")
+    
     def dictCols(self):
         self.dictTextAud = {}
         for n, newCol in enumerate(self.newCols): 
@@ -524,14 +532,20 @@ class displayQuery():
                     eAdd = f"_erro no download em virtude de inexistência do comprovante, erro no acesso à página oficial ou outra causa_ {addRec}"
                     st.markdown(f":material/document_scanner: _download não gerado_")
                     st.markdown(f":material/globe_2_cancel: {eAdd}", width="stretch")
-                colDown, colQrUrl, colAudUrl = st.columns(self.colThreeTwo, vertical_alignment="center", width="stretch", border=False)      
+                try:                
+                    colDown, colQrUrl, colAudUrl = st.columns(self.colThreeTwo, vertical_alignment="center", width="stretch", border=False)      
+                    textAud = f"Para tentar fazer download, dê um clique no link {url} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
+                    voice = random.choice(voicesOpts)
+                    audData = asyncio.run(operationFiles(None).createAudVoice(textAud, voice)) 
+                    audExist = True
+                except: 
+                    colDown, colQrUrl = st.columns(self.colThreeTwoAlt, vertical_alignment="center", width="stretch", border=False)      
+                    audExist = False
                 colDown.markdown(f":material/download_2: :red[**{url}**]", width="stretch")
                 byteImg = acessories(url).createQrCode(2)
                 colQrUrl.image(byteImg, width="content", link=url)
-                textAud = f"Para tentar fazer download, dê um clique no link {url} ao lado ou no QRCODE, ou apenas leia o QRCODe." 
-                voice = random.choice(voicesOpts)
-                audData = asyncio.run(operationFiles(None).createAudVoice(textAud, voice)) 
-                colAudUrl.audio(audData, format="audio/mp3", width="stretch")
+                if audExist: 
+                    colAudUrl.audio(audData, format="audio/mp3", width="stretch")
             if self.categ in [4, 5]: 
                 self.allPdfBytes[self.selDf].append(pdfBytes)
         elif self.categ == 3:
