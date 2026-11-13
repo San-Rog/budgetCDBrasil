@@ -46,8 +46,10 @@ from streamlit_extras.scroll_to_element import *
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 class graphics(): 
-    def __init__(self, data):
+    def __init__(self, data, typeExp, collorAll):
         self.data = data
+        self.typeExp = typeExp
+        self.collorAll = collorAll
         
     def graphChart(self): 
         cols = self.data.columns
@@ -64,7 +66,7 @@ class graphics():
                 dictExpVal[name] += val
         names = list(dictExpVal.keys())
         values = list(dictExpVal.values())
-        coloRandom = [f"#{random.randint(0, 0xFFFFFF):06x}" for _ in names]
+        coloRandom = [self.collorAll[name] for name in names]
         df = pd.DataFrame({
             "Categoria": names,
             "Valor": values,
@@ -458,6 +460,7 @@ class displayQuery():
         self.placeText = acessories(None).definePlace()
         objDisplay = displayQuery("").setPage(1)
         self.allPdfBytes = {}
+        colorAllRandom = {color: f"#{random.randint(0, 0xFFFFFF):06x}" for color in self.typeExp + ['VALOR TOTAL']}
         contG = 0
         for self.s, self.selDf in enumerate(self.allSelDf):
             self.allPdfBytes.setdefault(self.selDf, [])
@@ -510,8 +513,7 @@ class displayQuery():
                     with st.container(border=True, key=keyGraphic):
                         exprGraphic = f"**Gráficos dos gastos do(a) deputado(a) federal :red[{self.selDf}]**"
                         st.subheader(exprGraphic, icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)
-                        objGraphic = graphics(self.df)
-                        objGraphic.graphChart()
+                        graphics(self.df, self.typeExp, colorAllRandom).graphChart()
             self.colData.space(size="small")
         self.organizeDf()
         if self.categ in [4, 5]:
@@ -874,6 +876,8 @@ class windowStream():
     def __init__(self, cols, filters, fileDb, tableDb):
         self.cols = cols
         self.filters = filters
+        #self.filters[keys[1]] == descrição de despesas
+        #st.write(self.filters)
         self.keys = sorted(list(filters.keys()))
         self.fileDb = fileDb
         self.tableDb = tableDb
@@ -1068,32 +1072,10 @@ class windowStream():
         placeText = acessories(None).definePlace()
         objDisplay = displayQuery(placeText)
         placeHolder = objDisplay.setHtmlPlace(self.colData)
-        match value:
-            case 0 | 1:
-                title = f":material/data_table: acesso ao site oficial"
-                objDisplay = displayQuery(title)
-                objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
-                                   self.yearStart, self.yearEnd, value, self.typeExp)
-            case 2:
-                title = f":material/data_table: acesso ao site oficial"
-                objDisplay = displayQuery(title)
-                objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
-                                   self.yearStart, self.yearEnd, value, self.typeExp)
-            case 3:
-                title = f":material/data_table: acesso ao site oficial"
-                objDisplay = displayQuery(title)
-                objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
-                                   self.yearStart, self.yearEnd, value, self.typeExp)
-            case 4:
-                title = f":material/data_table: acesso ao site oficial"
-                objDisplay = displayQuery(title)
-                objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
-                                   self.yearStart, self.yearEnd, value, self.typeExp)
-            case 5:
-                title = f":material/data_table: acesso ao site oficial"
-                objDisplay = displayQuery(title)
-                objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
-                                   self.yearStart, self.yearEnd, value, self.typeExp)
+        title = f":material/data_table: acesso ao site oficial"
+        objDisplay = displayQuery(title)
+        objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
+                           self.yearStart, self.yearEnd, value, self.typeExp)
         placeHolder.empty()
     
     def defineMonths(self, num):
