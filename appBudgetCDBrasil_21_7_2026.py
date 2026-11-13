@@ -45,6 +45,33 @@ from selenium.webdriver.common.print_page_options import PrintOptions
 from streamlit_extras.scroll_to_element import *
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
+class graphics(): 
+    def __init__(self, data):
+        self.data = data
+        
+    def graphChart(self): 
+        cols = self.data.columns
+        expense = self.data[cols[7]].tolist()
+        value = self.data[cols[-1]].tolist()
+        dictExpVal = {}
+        for e, exp in enumerate(expense):
+            name = exp
+            val = value[e]
+            if name.strip() == "":
+                dictExpVal['VALOR TOTAL'] = value[-1]
+            else:
+                dictExpVal.setdefault(name, 0)
+                dictExpVal[name] += val
+        names = list(dictExpVal.keys())
+        values = list(dictExpVal.values())
+        coloRandom = [f"#{random.randint(0, 0xFFFFFF):06x}" for _ in names]
+        df = pd.DataFrame({
+            "Categoria": names,
+            "Valor": values,
+            "Cor": coloRandom,
+        })
+        st.bar_chart(df, x="Categoria", y="Valor", color="Cor")
+
 class acessories():
     def __init__(self, num):
         self.alphaNum = num
@@ -431,6 +458,7 @@ class displayQuery():
         self.placeText = acessories(None).definePlace()
         objDisplay = displayQuery("").setPage(1)
         self.allPdfBytes = {}
+        contG = 0
         for self.s, self.selDf in enumerate(self.allSelDf):
             self.allPdfBytes.setdefault(self.selDf, [])
             keyDf = f"{self.selDf}_{self.s + 1}"
@@ -450,31 +478,40 @@ class displayQuery():
                     colAunch, colSum = st.columns(self.colTwo, border=False, width="stretch")
                     colAunch.markdown(self.exprLanc) 
                     colSum.markdown(self.exprLiq)
-                    if self.categ in [0, 1, 3, 4, 5]:
-                        if self.categ in [0, 3]: 
+                    if self.categ in range(6):
+                        if self.categ in [0, 2, 3]: 
                             st.dataframe(data=self.df, width="stretch", hide_index=True)
                         else:
                             self.dfOrig = self.df
                             self.configDataFrame()                            
                             st.dataframe(data=self.dfCopy, width="stretch", hide_index=True)
-                for url in self.urlDocs:
-                    st.subheader(self.addDf[1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)
-                    for u, ur in enumerate(url):
-                        keyDfUrl = f"{self.selDf}_{self.s + 1}_{u+1}"
-                        with st.container(border=True, key=keyDfUrl):
-                            self.cont += u
-                            (colDf, ) = st.columns(1, border=False)
-                            colDf.markdown(self.exprDf)
-                            contUs = f"{u+1}/{self.nLanc}"
-                            colDetail, colLiq = st.columns(self.colTwo, border=False)
-                            exprLanc = f"_lançamento_ :red[**{contUs}**]"
-                            exprLancUr = f":material/tag: {exprLanc}"
-                            valReal = self.newCotas[u][-1]
-                            exprLiqUr = f":material/money_bag: _despesa líquida parcial de_ :red[**R$ {acessories(valReal).convertNumber(1)}**]"
-                            exprLiqUr += f" (:blue[{(acessories(valReal).convertNumExt()).lower()}])"
-                            colDetail.markdown(exprLancUr)
-                            colLiq.markdown(exprLiqUr)
-                            self.checkUrl(u, ur, contUs, exprLanc)                            
+                if self.categ not in [2]:
+                    for url in self.urlDocs:
+                        st.subheader(self.addDf[1], icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)
+                        for u, ur in enumerate(url):
+                            keyDfUrl = f"{self.selDf}_{self.s + 1}_{u+1}"
+                            with st.container(border=True, key=keyDfUrl):
+                                self.cont += u
+                                (colDf, ) = st.columns(1, border=False)
+                                colDf.markdown(self.exprDf)
+                                contUs = f"{u+1}/{self.nLanc}"
+                                colDetail, colLiq = st.columns(self.colTwo, border=False)
+                                exprLanc = f"_lançamento_ :red[**{contUs}**]"
+                                exprLancUr = f":material/tag: {exprLanc}"
+                                valReal = self.newCotas[u][-1]
+                                exprLiqUr = f":material/money_bag: _despesa líquida parcial de_ :red[**R$ {acessories(valReal).convertNumber(1)}**]"
+                                exprLiqUr += f" (:blue[{(acessories(valReal).convertNumExt()).lower()}])"
+                                colDetail.markdown(exprLancUr)
+                                colLiq.markdown(exprLiqUr)
+                                self.checkUrl(u, ur, contUs, exprLanc)
+                else: 
+                    contG += 1
+                    keyGraphic = f"{keyDf}_{self.s + 1}_{contG}"
+                    with st.container(border=True, key=keyGraphic):
+                        exprGraphic = f"**Gráficos dos gastos do(a) deputado(a) federal :red[{self.selDf}]**"
+                        st.subheader(exprGraphic, icon=":material/box_edit:", width="stretch", text_alignment="center", anchor=None)
+                        objGraphic = graphics(self.df)
+                        objGraphic.graphChart()
             self.colData.space(size="small")
         self.organizeDf()
         if self.categ in [4, 5]:
@@ -733,7 +770,7 @@ class displayQuery():
         if buttClose:
             st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.google.com'" />
                         """, unsafe_allow_html=True) 
-    
+      
     @st.dialog(title='Cópia para pasta _download_', width="medium", icon=":material/file_copy:", 
                on_dismiss="ignore") 
     def copyFile(_self):
@@ -1038,7 +1075,10 @@ class windowStream():
                 objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
                                    self.yearStart, self.yearEnd, value, self.typeExp)
             case 2:
-                pass
+                title = f":material/data_table: acesso ao site oficial"
+                objDisplay = displayQuery(title)
+                objDisplay.queryDf(self.cols, self.allSelDf, self.results, self.colData, 
+                                   self.yearStart, self.yearEnd, value, self.typeExp)
             case 3:
                 title = f":material/data_table: acesso ao site oficial"
                 objDisplay = displayQuery(title)
