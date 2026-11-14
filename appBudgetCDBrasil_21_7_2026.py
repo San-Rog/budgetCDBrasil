@@ -21,6 +21,7 @@ from gtts import gTTS
 import streamlit as st
 import zstandard as zstd
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import date
 from pypdf import PdfReader, PdfWriter
 from io import BytesIO
@@ -57,6 +58,7 @@ class graphics():
         expense = self.data[cols[7]].tolist()
         value = self.data[cols[-1]].tolist()
         dictExpVal = {}
+        symbs = [":material/bar_chart:", ":material/storage:"]
         for e, exp in enumerate(expense):
             name = exp
             val = value[e]
@@ -69,16 +71,20 @@ class graphics():
         values = list(dictExpVal.values())
         coloRandom = [self.collorAll[name] for name in names]
         dataBar = {"Categoria": names[:-1], "Valor": values[:-1], "Cor": coloRandom[:-1]}
-        dataBar =  dict(sorted(dataBar.items(), key=lambda item: str(item[1])))
         dfBar = pd.DataFrame(dataBar)
-        colBar, colPie = st.columns(spec=2, vertical_alignment="center", width="stretch", 
-                                    gap="small", border=True)
-        colBar.bar_chart(dfBar, x="Categoria", y="Valor", color="Cor", sort=True)
-        dataLine = {"Categoria": names[:-1], "Valor": values[:-1]}
-        dfLine = pd.DataFrame(dataLine)
-        fig = px.pie(dfLine, names="Categoria", values="Valor", color_discrete_sequence=coloRandom[:-1], 
-                     title=None)
-        colPie.plotly_chart(fig)  
+        dfBar = dfBar.sort_values(by="Categoria")
+        colBarOne, colBarTwo = st.columns(spec=2, vertical_alignment="top", width="stretch", 
+                                          gap="medium")
+        w = 0
+        with colBarOne: 
+            st.markdown(f"{symbs[w]} Gráfico {w+1}", unsafe_allow_html=False, text_alignment="center")
+            st.bar_chart(dfBar, x="Categoria", y="Valor", color="Cor", horizontal=False, 
+                         width="stretch", height="stretch")
+        w += 1
+        with colBarTwo: 
+            st.markdown(f"{symbs[w]} Gráfico {w+1}", unsafe_allow_html=False, text_alignment="center")
+            st.bar_chart(dfBar, x="Categoria", y="Valor", color="Cor", horizontal=True, 
+                         width="stretch", height="stretch")    
 
 class acessories():
     def __init__(self, num):
@@ -405,8 +411,8 @@ class displayQuery():
         dataAllSplit = acessories([self.start, self.end]).extractData()
         with self.colData.expander(label="Detalhes da pesquisa", expanded=False, icon=":material/person_search:", 
                                    width="stretch"):
-            self.dataLines = dataAllSplit[1:]
-            df = pd.DataFrame(self.dataLines)
+            self.dataPies = dataAllSplit[1:]
+            df = pd.DataFrame(self.dataPies)
             self.newCols = ['link para download', 'nome do arquivo', 'criação (dia e horário)', 'modificação (dia e horário)', 'tamanho']
             self.dictCols()
             df.columns = self.newCols
@@ -445,8 +451,8 @@ class displayQuery():
         self.dictTextAud = {}
         for n, newCol in enumerate(self.newCols): 
             self.dictTextAud.setdefault(newCol, [])
-            for dataLine in self.dataLines:
-                self.dictTextAud[newCol].append(dataLine[n])
+            for dataPie in self.dataPies:
+                self.dictTextAud[newCol].append(dataPie[n])
         self.textAud = ''
         for dctText, aud in self.dictTextAud.items(): 
             audJoin = ' '.join(aud)
