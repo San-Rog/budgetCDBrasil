@@ -20,6 +20,7 @@ import pandas as pd
 from gtts import gTTS
 import streamlit as st
 import zstandard as zstd
+import plotly.express as px
 from datetime import date
 from pypdf import PdfReader, PdfWriter
 from io import BytesIO
@@ -60,19 +61,24 @@ class graphics():
             name = exp
             val = value[e]
             if name.strip() == "":
-                dictExpVal['VALOR TOTAL'] = value[-1]
+                dictExpVal['VALOR TOTAL'] = value[-1] #só em alguns casos
             else:
                 dictExpVal.setdefault(name, 0)
                 dictExpVal[name] += val
         names = list(dictExpVal.keys())
         values = list(dictExpVal.values())
         coloRandom = [self.collorAll[name] for name in names]
-        df = pd.DataFrame({
-            "Categoria": names,
-            "Valor": values,
-            "Cor": coloRandom,
-        })
-        st.bar_chart(df, x="Categoria", y="Valor", color="Cor")
+        dataBar = {"Categoria": names[:-1], "Valor": values[:-1], "Cor": coloRandom[:-1]}
+        dataBar =  dict(sorted(dataBar.items(), key=lambda item: str(item[1])))
+        dfBar = pd.DataFrame(dataBar)
+        colBar, colPie = st.columns(spec=2, vertical_alignment="center", width="stretch", 
+                                    gap="small", border=True)
+        colBar.bar_chart(dfBar, x="Categoria", y="Valor", color="Cor", sort=True)
+        dataLine = {"Categoria": names[:-1], "Valor": values[:-1]}
+        dfLine = pd.DataFrame(dataLine)
+        fig = px.pie(dfLine, names="Categoria", values="Valor", color_discrete_sequence=coloRandom[:-1], 
+                     title=None)
+        colPie.plotly_chart(fig)  
 
 class acessories():
     def __init__(self, num):
