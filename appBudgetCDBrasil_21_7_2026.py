@@ -85,7 +85,8 @@ class graphics():
                     x=1.02                  
         )
         with colBar:
-            st.markdown(f"{symbs[w]} Gráfico {w+1}", unsafe_allow_html=False, text_alignment="center")
+            st.markdown(f"{symbs[w]} **Gráfico {w+1}**", text_alignment="center", 
+                        help="A ordem das cores não coincide necessariamente com as do gráfico 2.")
             fig = px.bar(dfBar, x="Categoria", y="Valor", color="Categoria")
             fig.update_xaxes(visible=False)
             fig.update_layout(legend=legendFormat)
@@ -97,7 +98,8 @@ class graphics():
                                               gap="medium")
         w += 1
         with colPie:
-            st.markdown(f"{symbs[w]} Gráfico {w+1}", text_alignment="center")
+            st.markdown(f"{symbs[w]} **Gráfico {w+1}**", text_alignment="center", 
+                        help="A ordem das cores não coincide necessariamente com as do gráfico 1.")
             fig = px.pie(dfBar, values='Valor', names='Categoria') 
             mxValor = max(valuesRedux)
             pullVal = [0.25 if value == mxValor else 0.1 for value in values]  
