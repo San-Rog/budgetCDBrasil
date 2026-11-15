@@ -15,14 +15,13 @@ import asyncio
 import calendar
 import mammoth
 import edge_tts
+import matplotlib.pyplot as plt
 import plotly.express as px
 from xhtml2pdf import pisa
 import pandas as pd
 from gtts import gTTS
 import streamlit as st
 import zstandard as zstd
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 from datetime import date
 from pypdf import PdfReader, PdfWriter
 from io import BytesIO
@@ -75,34 +74,37 @@ class graphics():
         namesRedux, valuesRedux, coloRedux = (names[:-1], values[:-1], coloRandom[:-1])
         dataBar = {"Categoria": namesRedux, "Valor": valuesRedux, "Cor": coloRedux}
         dfBar = pd.DataFrame(dataBar)
-        colBarOne, colBarTwo = st.columns(spec=2, vertical_alignment="top", width="stretch", 
-                                              gap="medium")
+        dfBar = dfBar.sort_values(by="Valor")
+        (colBar,) = st.columns(1, vertical_alignment="top", width="stretch", gap="medium")
         w = 0
-        with colBarOne:
+        legendFormat = dict(
+                    orientation="v",  
+                    yanchor="top",    
+                    y=1,              
+                    xanchor="left",   
+                    x=1.02                  
+        )
+        with colBar:
             st.markdown(f"{symbs[w]} Gráfico {w+1}", unsafe_allow_html=False, text_alignment="center")
-            st.bar_chart(dfBar, x="Categoria", y="Valor", color="Cor", horizontal=False, 
-                         width="stretch", height="content", x_label="")
+            fig = px.bar(dfBar, x="Categoria", y="Valor", color="Categoria")
+            fig.update_xaxes(visible=False)
+            fig.update_layout(legend=legendFormat)
+            fig.update_layout(legend_title_text='Categorias de gasto')
+            fig.update_layout(legend=dict(traceorder="reversed"))
+            st.plotly_chart(fig, width="stretch", height="stretch")
+        st.divider()
+        (colPie,) = st.columns(1, vertical_alignment="top", width="stretch", 
+                                              gap="medium")
         w += 1
-        with colBarTwo: 
+        with colPie:
             st.markdown(f"{symbs[w]} Gráfico {w+1}", text_alignment="center")
-            st.bar_chart(dfBar, x="Categoria", y="Valor", color="Cor", horizontal=True, 
-                         width="stretch", height="content", x_label="")
-        colPieOne, colPieTwo = st.columns(spec=2, vertical_alignment="top", width="stretch", 
-                                          gap="medium")
-        
-        st.space("small")
-        w += 1
-        with colPieOne:
-            st.markdown(f"{symbs[w]} Gráfico {w+1}", text_alignment="center")
-            fig = px.pie(dfBar, values='Valor', names='Categoria')             
-            st.plotly_chart(fig, width="stretch", height="content")
-        w += 1
-        with colPieTwo:
-            st.markdown(f"{symbs[w]} Gráfico {w+1}", text_alignment="center")
+            fig = px.pie(dfBar, values='Valor', names='Categoria') 
             mxValor = max(valuesRedux)
             pullVal = [0.25 if value == mxValor else 0.1 for value in values]  
             pieOne = px.pie(dfBar, values='Valor', names='Categoria') 
             fig.update_traces(pull=pullVal)
+            fig.update_layout(legend=legendFormat)
+            fig.update_layout(legend_title_text='Categorias de gasto')
             st.plotly_chart(fig, width="stretch", height="content")
 
 class acessories():
