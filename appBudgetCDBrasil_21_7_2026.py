@@ -15,13 +15,14 @@ import asyncio
 import calendar
 import mammoth
 import edge_tts
+import plotly.express as px
 from xhtml2pdf import pisa
 import pandas as pd
 from gtts import gTTS
 import streamlit as st
 import zstandard as zstd
-import plotly.express as px
-import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from datetime import date
 from pypdf import PdfReader, PdfWriter
 from io import BytesIO
@@ -58,7 +59,8 @@ class graphics():
         expense = self.data[cols[7]].tolist()
         value = self.data[cols[-1]].tolist()
         dictExpVal = {}
-        symbs = [":material/bar_chart:", ":material/storage:"]
+        symbs = [":material/bar_chart:", ":material/storage:", 
+                 ":material/pie_chart:", ":material/donut_small:"]
         for e, exp in enumerate(expense):
             name = exp
             val = value[e]
@@ -70,21 +72,38 @@ class graphics():
         names = list(dictExpVal.keys())
         values = list(dictExpVal.values())
         coloRandom = [self.collorAll[name] for name in names]
-        dataBar = {"Categoria": names[:-1], "Valor": values[:-1], "Cor": coloRandom[:-1]}
+        namesRedux, valuesRedux, coloRedux = (names[:-1], values[:-1], coloRandom[:-1])
+        dataBar = {"Categoria": namesRedux, "Valor": valuesRedux, "Cor": coloRedux}
         dfBar = pd.DataFrame(dataBar)
-        dfBar = dfBar.sort_values(by="Categoria")
         colBarOne, colBarTwo = st.columns(spec=2, vertical_alignment="top", width="stretch", 
-                                          gap="medium")
+                                              gap="medium")
         w = 0
-        with colBarOne: 
+        with colBarOne:
             st.markdown(f"{symbs[w]} Gráfico {w+1}", unsafe_allow_html=False, text_alignment="center")
             st.bar_chart(dfBar, x="Categoria", y="Valor", color="Cor", horizontal=False, 
-                         width="stretch", height="stretch")
+                         width="stretch", height="content", x_label="")
         w += 1
         with colBarTwo: 
-            st.markdown(f"{symbs[w]} Gráfico {w+1}", unsafe_allow_html=False, text_alignment="center")
+            st.markdown(f"{symbs[w]} Gráfico {w+1}", text_alignment="center")
             st.bar_chart(dfBar, x="Categoria", y="Valor", color="Cor", horizontal=True, 
-                         width="stretch", height="stretch")    
+                         width="stretch", height="content", x_label="")
+        colPieOne, colPieTwo = st.columns(spec=2, vertical_alignment="top", width="stretch", 
+                                          gap="medium")
+        
+        st.space("small")
+        w += 1
+        with colPieOne:
+            st.markdown(f"{symbs[w]} Gráfico {w+1}", text_alignment="center")
+            fig = px.pie(dfBar, values='Valor', names='Categoria')             
+            st.plotly_chart(fig, width="stretch", height="content")
+        w += 1
+        with colPieTwo:
+            st.markdown(f"{symbs[w]} Gráfico {w+1}", text_alignment="center")
+            mxValor = max(valuesRedux)
+            pullVal = [0.25 if value == mxValor else 0.1 for value in values]  
+            pieOne = px.pie(dfBar, values='Valor', names='Categoria') 
+            fig.update_traces(pull=pullVal)
+            st.plotly_chart(fig, width="stretch", height="content")
 
 class acessories():
     def __init__(self, num):
