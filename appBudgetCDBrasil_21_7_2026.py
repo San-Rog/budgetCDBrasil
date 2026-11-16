@@ -48,6 +48,30 @@ from selenium.webdriver.common.print_page_options import PrintOptions
 from streamlit_extras.scroll_to_element import *
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
+class dialogHelp():
+    def __init__(self, title):
+        self.title = title
+        
+    @st.dialog(title="Informações", width="medium", icon=":material/file_copy:", on_dismiss="ignore") 
+    def helpInfo(self):
+        pass
+
+    @st.dialog(title="Vídeos", width="medium", icon=":material/file_copy:", on_dismiss="ignore")
+    def helpVds(self):
+        pass
+        
+    @st.dialog(title="Áudios", width="medium", icon=":material/file_copy:", on_dismiss="ignore")
+    def helpAuds(self):
+        pass
+        
+    @st.dialog(title="Links", width="medium", icon=":material/file_copy:", on_dismiss="ignore")
+    def helpLinks(self):
+        pass
+        
+    @st.dialog(title="Customização", width="medium", icon=":material/file_copy:", on_dismiss="ignore")
+    def helpSetup(self):
+        pass
+
 class graphics(): 
     def __init__(self, data, typeExp, collorAll):
         self.data = data
@@ -1088,17 +1112,19 @@ class windowStream():
     def fixedBar(self):
         dictButtFloat = {"Informações": ["Informações", "keyButton_info", ":material/info:", "Dá mais informações sobre o aplicativo."], 
                          "Vídeos": ["Vídeos", "keyButton_vídeo", ":material/video_library:", "Exibe vídeos sobre o aplicativo."], 
+                         "Áudios": ["Áudios", "keyButton_auds", ":material/select_to_speak:", "Exibe áudios sobre o aplicativo."], 
                          "Links": ["Links", "keyButton_links", ":material/dataset_linked:", "Exibe links úteis associados ao aplicativo."], 
-                         "Limpeza": ["Limpeza", "keyButton_limpeza", ":material/cleaning_services:", "Limpa os dados da tela."], 
+                         "Setup": ["Setup", "keyButton_setup", ":material/settings:", "Exibe opções de customização do aplicativo."],
+                         "Limpeza": ["Limpeza", "keyButton_limpeza", ":material/cleaning_services:", "Limpa os dados e vai para o topo da tela."], 
                          "Saída": ["Saída", "keyButton_saída", ":material/exit_to_app:", "Sai do aplicativo."] 
                          }
         barFloat = self.colData.container()
-        keyButtFloat = list(dictButtFloat.keys())
-        nKeys = len(keyButtFloat)
+        self.keyButtFloat = list(dictButtFloat.keys())
+        nKeys = len(self.keyButtFloat)
         with barFloat:
             colButtons = st.columns(nKeys)
             for c, col in enumerate(colButtons):
-                elemButton = dictButtFloat[keyButtFloat[c]]
+                elemButton = dictButtFloat[self.keyButtFloat[c]]
                 col.button(label=elemButton[0], key=elemButton[1], on_click=self.checkButtFloat, args=(c, ),  
                            use_container_width=True, width="stretch", icon=elemButton[2], help=elemButton[3])
             barFloat.float(
@@ -1108,16 +1134,20 @@ class windowStream():
     def checkButtFloat(self, item):
         match item:
             case 0:
-                pass
+                dialogHelp(self.keyButtFloat[item]).helpInfo()
             case 1:
-                pass
+                dialogHelp(self.keyButtFloat[item]).helpVds()
             case 2: 
-                pass
-            case 3:
+                dialogHelp(self.keyButtFloat[item]).helpAuds()
+            case 3: 
+                dialogHelp(self.keyButtFloat[item]).helpLinks()
+            case 4:
+                dialogHelp(self.keyButtFloat[item]).helpSetup()            
+            case 5:
                 dictVal = helpPlace[1]
                 scroll_to_element(wordKeys[dictVal[3]])
                 st.session_state[wordKeys[5]] = None
-            case 4:
+            case _:
                 st.markdown("""<meta http-equiv="refresh" content="0; url='https://www.google.com/'" />
                             """, unsafe_allow_html=True)
     
