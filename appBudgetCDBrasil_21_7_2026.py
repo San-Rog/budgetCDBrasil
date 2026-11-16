@@ -92,8 +92,9 @@ class graphics():
             fig.update_yaxes(title_text="")
             fig.update_layout(legend=legendFormat)
             fig.update_layout(legend_title_text='Categorias de gasto')
-            fig.update_layout(legend=dict(traceorder="reversed"))
-            fig.update_layout(separators=',.')
+            fig.update_layout(legend=dict(traceorder="reversed"), 
+                              separators=',.', 
+                              margin=dict(t=40, b=10, l=10, r=10))
             fig.update_yaxes(tickprefix='R$ ', tickformat=',.2f')
             fig.update_traces(
                 texttemplate='R$ %{y:,.2f}',
@@ -114,7 +115,7 @@ class graphics():
                 pull=pullVal, 
                 textposition='inside',
                 textinfo='percent+value',
-                texttemplate='%{percent:.2%}<br>R$ %{value:,.2f}',
+                texttemplate='%{percent:.2%}<br>',
                 hovertemplate=(
                     '<b>%{label}</b><br>Valor: R$ %{value:,.2f}<br>Porcentagem:'
                     ' %{percent:.2%}<extra></extra>'
@@ -122,7 +123,8 @@ class graphics():
             )
             fig.update_layout(separators=',.',                                
                               legend=legendFormat, 
-                              legend_title_text='Categorias de gasto')
+                              legend_title_text='Categorias de gasto', 
+                              margin=dict(t=40, b=10, l=10, r=10))
             st.plotly_chart(fig, width="stretch", height="content")
 
 class acessories():
