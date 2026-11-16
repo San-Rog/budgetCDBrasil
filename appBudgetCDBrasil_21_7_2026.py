@@ -17,6 +17,7 @@ import mammoth
 import edge_tts
 import matplotlib.pyplot as plt
 import plotly.express as px
+import plotly.graph_objects as go
 from xhtml2pdf import pisa
 import pandas as pd
 from gtts import gTTS
@@ -85,28 +86,43 @@ class graphics():
                     x=1.02                  
         )
         with colBar:
-            st.markdown(f"{symbs[w]} **Gráfico {w+1}**", text_alignment="center", 
-                        help="A ordem das cores não coincide necessariamente com as do gráfico 2.")
+            st.markdown(f"{symbs[w]} **Gráfico {w+1}**", text_alignment="center")
             fig = px.bar(dfBar, x="Categoria", y="Valor", color="Categoria")
             fig.update_xaxes(visible=False)
+            fig.update_yaxes(title_text="")
             fig.update_layout(legend=legendFormat)
             fig.update_layout(legend_title_text='Categorias de gasto')
             fig.update_layout(legend=dict(traceorder="reversed"))
+            fig.update_layout(separators=',.')
+            fig.update_yaxes(tickprefix='R$ ', tickformat=',.2f')
+            fig.update_traces(
+                texttemplate='R$ %{y:,.2f}',
+                textposition='outside',
+                hovertemplate='<b>%{x}</b><br>Valor: R$ %{y:,.2f}<extra></extra>',
+            )
+            fig.update_yaxes(range=[0, dfBar['Valor'].max() * 1.15])            
             st.plotly_chart(fig, width="stretch", height="stretch")
-        st.divider()
-        (colPie,) = st.columns(1, vertical_alignment="top", width="stretch", 
-                                              gap="medium")
+        (colPie,) = st.columns(1, vertical_alignment="top", width="stretch", gap="medium")
         w += 1
         with colPie:
-            st.markdown(f"{symbs[w]} **Gráfico {w+1}**", text_alignment="center", 
-                        help="A ordem das cores não coincide necessariamente com as do gráfico 1.")
-            fig = px.pie(dfBar, values='Valor', names='Categoria') 
+            st.markdown(f"{symbs[w]} **Gráfico {w+1}**", text_alignment="center")
+            fig = px.pie(dfBar, values='Valor', names='Categoria', color="Cor") 
             mxValor = max(valuesRedux)
-            pullVal = [0.25 if value == mxValor else 0.1 for value in values]  
-            pieOne = px.pie(dfBar, values='Valor', names='Categoria') 
-            fig.update_traces(pull=pullVal)
-            fig.update_layout(legend=legendFormat)
-            fig.update_layout(legend_title_text='Categorias de gasto')
+            pullVal = [0.32 if value == mxValor else 0.25 for value in values]  
+            fig.update_traces(
+                sort=True, 
+                pull=pullVal, 
+                textposition='inside',
+                textinfo='percent+value',
+                texttemplate='%{percent:.2%}<br>R$ %{value:,.2f}',
+                hovertemplate=(
+                    '<b>%{label}</b><br>Valor: R$ %{value:,.2f}<br>Porcentagem:'
+                    ' %{percent:.2%}<extra></extra>'
+                ),
+            )
+            fig.update_layout(separators=',.',                                
+                              legend=legendFormat, 
+                              legend_title_text='Categorias de gasto')
             st.plotly_chart(fig, width="stretch", height="content")
 
 class acessories():
