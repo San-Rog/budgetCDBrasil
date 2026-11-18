@@ -52,10 +52,69 @@ class dialogHelp():
     def __init__(self, title):
         self.title = title
         
-    @st.dialog(title="Informações", width="medium", icon=":material/info:", on_dismiss="ignore") 
+    @st.dialog(title="Informações sobre o app", width="large", icon=":material/info:", on_dismiss="ignore") 
     def helpInfo(self):
-        pass
-
+        dictFields = {"creator": ["Sandro Rogério Alves e SIlva"], 
+                      "font": ["Câmara dos Deputados"], 
+                      "link": ["https://dadosabertos.camara.leg.br/swagger/api.html?tab=staticfile"], 
+                      "actual": ["diária, exceto aos sábados, domingos e feriados"]
+        }
+        df = pd.DataFrame(dictFields)
+        st.markdown(":material/apps: Gerais", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        st.dataframe(df, 
+                     column_config={
+                        "creator": st.column_config.TextColumn("🧑‍💻 desenvolvedor", 
+                            help="Informa o nome completo do criador e mantenedor do aplicativo."), 
+                        "font": st.column_config.TextColumn("🏛️ órgão supridor dos dados", 
+                            help="Informa o órgão que fornece a base de dados usada no aplicativo."), 
+                        "link": st.column_config.LinkColumn("🔗 link dos dados oficiais", 
+                            help="Link oficial dos arquivos JSON usados no aplicativo."), 
+                        "actual": st.column_config.TextColumn("🗓️ atualização do aplicativo", 
+                            help="Esclarece a periodicidade de atualização do aplicativo.")
+                    }, 
+                    hide_index=True
+        )
+        colTask, colFunc = st.columns(2, width="stretch", gap="small", vertical_alignment="top") 
+        colTask.markdown(":material/task: Barra de tarefas", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        keysButt = list(dictButtFloat.keys()) 
+        buttTask = [f"{dictButtFloat[key][2]} {dictButtFloat[key][0]}" for key in keysButt]
+        buttObjective = ["Dá noções gerais e específicas sobre o aplicativo.", 
+                         "Exibe vídeos deste app abrangendo telas e funcionalidades.", 
+                         "Apresenta áudios com informações sobre este aplicativo.", 
+                         "Abre janela com os links da Câmara dos Deputados que contém informações sobre a Cota Parlamentar.", 
+                         "Oferece opções de customização dos resultados e das funcionalidades aplicativo.", 
+                         "Apaga todos os dados da consulta e volta ao topo do aplicativo.", 
+                         "Desativa o aplicativo."]
+        dicTasks = {"botão": buttTask, 
+                    "funcionalidade": buttObjective}
+        colTask.table(dicTasks, width="stretch")
+        colTask.markdown(":material/person_search: detalhes da consulta", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        dictDetails = {"opção": [":material/folder_info:  Download"], 
+                       "Detalhes": [""":material/clarify: Informa diferentes dados sobre a consulta formulada, incluindo 
+                                    link, nome do arquivo (json), data de criação, data de modificação
+                                    e tamanho (em MB)."""]
+        }
+        colTask.table(dictDetails, width="stretch")
+        colTask.space("xxsmall")
+        colFunc.markdown(":material/engineering: Conjunto de operações", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        funcKeys = list(dictButtons.keys())
+        functButt = [f"{dictButtons[key][2]} {dictButtons[key][0]}" for key in funcKeys]
+        funcObjective = ["""Exibe na tela os dados da pesquisa por data, estado e nome, usando os 
+                         dados com a formatação original da base de dados da Câmara dos Deputados.
+                         Oferece opção de baixar arquivos ZIP ou PDF.""", 
+                         """Exibe na tela os dados da pesquisa por data, estado e nome, usando os 
+                         dados com a formatação modificada dos campos marcados com asterisco.
+                         Oferece opção de baixar arquivos ZIP ou PDF.""", 
+                         """Exibe gráficos das despesas agregadas de cada parlamentar, sendo um no formato de barras verticais e outro no de pizza.""", 
+                         """Exibe os dados originais com os campos incompletos, faltantes ou formatados erroneamente na origem.""", 
+                         """Gera arquivo PDF contendo os lançamentos (gastos) de cada parlamentar acompanhados, quando for o caso , 
+                         de imagem do respectivo comprovante. """, 
+                         """Gera arquivo Word contendo os lançamentos (gastos) de cada parlamentar acompanhados, quando for o caso, 
+                         de imagem do respectivo comprovante."""]
+        dictFunc = {"botão": functButt, 
+                    "funcionalidade": funcObjective}
+        colFunc.table(dictFunc, width="content")
+        
     @st.dialog(title="Vídeos", width="medium", icon=":material/video_library:", on_dismiss="ignore")
     def helpVds(self):
         pass
@@ -500,7 +559,7 @@ class displayQuery():
     
     def screenExpander(self):
         dataAllSplit = acessories([self.start, self.end]).extractData()
-        with self.colData.expander(label="Detalhes da pesquisa", expanded=False, icon=":material/person_search:", 
+        with self.colData.expander(label="Detalhes da consulta", expanded=False, icon=":material/person_search:", 
                                    width="stretch"):
             self.dataPies = dataAllSplit[1:]
             df = pd.DataFrame(self.dataPies)
@@ -1113,14 +1172,6 @@ class windowStream():
                 self.allSelDf = st.multiselect(label=dictVal[1], options=optsName, width="stretch", label_visibility="collapsed", 
                                                key=wordKeys[dictVal[3]], placeholder=dictVal[4], 
                                                accept_new_options=True, disabled=resultDisab)
-        keyButt = "keyButton"
-        prefixButt = "button"
-        dictButtons = {"tela_original": ["original", f"{keyButt}Original", ":material/screen_search_desktop:", "Exibe os dados originais do site."], 
-                       "tela_modificada": ["modificada", f"{keyButt}Modify", ":material/edit_square:", f"Exibe os dados com parcial modificação/adaptação de formato. (Conferir campos marcados por um asterisco.)"], 
-                       "tela_grapho": ["gráfico", f"{keyButt}Grapho", ":material/insert_chart:", "Plota gráfico com os dados."], 
-                       "tela_errores": ["análise", f"{keyButt}Errores", ":material/category:", "Exibe, analisa e classifica os dados originais da Câmara Federal."],
-                       "tela_pdf": ["pdf", f"{keyButt}Pdf", ":material/picture_as_pdf:", "Gera arquivo PDF."], 
-                       "tela_word": ["word", f"{keyButt}Word", ":material/text_snippet:", "Gera arquivo Word."]} 
         keyButtons = list(dictButtons.keys())
         nKeys = len(keyButtons)
         nSelfDf = len(self.allSelDf)
@@ -1136,14 +1187,6 @@ class windowStream():
         self.fixedBar()
         
     def fixedBar(self):
-        dictButtFloat = {"Informações": ["Informações", "keyButton_info", ":material/info:", "Dá mais informações sobre o aplicativo."], 
-                         "Vídeos": ["Vídeos", "keyButton_vídeo", ":material/video_library:", "Exibe vídeos sobre o aplicativo."], 
-                         "Áudios": ["Áudios", "keyButton_auds", ":material/select_to_speak:", "Exibe áudios sobre o aplicativo."], 
-                         "Links": ["Links", "keyButton_links", ":material/dataset_linked:", "Exibe links da Câmara dos Deputados sobre Cota Parlamentar."], 
-                         "Setup": ["Setup", "keyButton_setup", ":material/settings:", "Exibe opções de customização do aplicativo."],
-                         "Limpeza": ["Limpeza", "keyButton_limpeza", ":material/cleaning_services:", "Limpa os dados e vai para o topo da tela."], 
-                         "Saída": ["Saída", "keyButton_saída", ":material/exit_to_app:", "Sai do aplicativo."] 
-                         }
         barFloat = self.colData.container()
         self.keyButtFloat = list(dictButtFloat.keys())
         nKeys = len(self.keyButtFloat)
@@ -1665,7 +1708,8 @@ class main():
 if __name__ == '__main__':
     global wordKeys, seps
     global helpPlace, textPlaceAll
-    global voicesOpts            
+    global voicesOpts, dictButtFloat 
+    global dictButtons
     helpPlace = {1:[":material/date_range:", "data inicial", "Selecione a data inicial (mês e ano).", 5, 6, "ano", "mês"], 
                  2:[":material/date_range:", "data final", "Selecione a data final (mês e ano).", 7, 8, "ano", "mês"], 
                  3:[":material/flag:", "estado", "Selecione uma unidade federativa por vez", 9, "sigla"], 
@@ -1676,6 +1720,22 @@ if __name__ == '__main__':
                 'enableUfs', 'valYearStart', 'valMonthStart', 'valYearEnd', 'valMonthEnd', 
                 'valUf', 'valDf', 'countSearch', 'allFillters', 'lastKey', 'allPdfBytes']
     voicesOpts = ["pt-BR-FranciscaNeural", "pt-BR-AntonioNeural"]
+    dictButtFloat = {"Informações": ["Informações", "keyButton_info", ":material/info:", "Dá mais informações sobre o aplicativo."], 
+                     "Vídeos": ["Vídeos", "keyButton_vídeo", ":material/video_library:", "Exibe vídeos sobre o aplicativo."], 
+                     "Áudios": ["Áudios", "keyButton_auds", ":material/select_to_speak:", "Exibe áudios sobre o aplicativo."], 
+                     "Links": ["Links", "keyButton_links", ":material/dataset_linked:", "Exibe links da Câmara dos Deputados sobre Cota Parlamentar."], 
+                     "Setup": ["Setup", "keyButton_setup", ":material/settings:", "Exibe opções de customização do aplicativo."],
+                     "Limpeza": ["Limpeza", "keyButton_limpeza", ":material/cleaning_services:", "Limpa os dados e vai para o topo da tela."], 
+                     "Saída": ["Saída", "keyButton_saída", ":material/exit_to_app:", "Sai do aplicativo."] 
+                    }
+    keyButt = "keyButton"
+    dictButtons = {"tela_original": ["original", f"{keyButt}Original", ":material/screen_search_desktop:", "Exibe os dados originais do site."], 
+                   "tela_modificada": ["modificada", f"{keyButt}Modify", ":material/edit_square:", f"Exibe os dados com parcial modificação/adaptação de formato. (Conferir campos marcados por um asterisco.)"], 
+                   "tela_grapho": ["gráfico", f"{keyButt}Grapho", ":material/insert_chart:", "Plota gráfico com os dados."], 
+                   "tela_errores": ["análise", f"{keyButt}Errores", ":material/category:", "Exibe, analisa e classifica os dados originais da Câmara Federal."],
+                   "tela_pdf": ["pdf", f"{keyButt}Pdf", ":material/picture_as_pdf:", "Gera arquivo PDF."], 
+                   "tela_word": ["word", f"{keyButt}Word", ":material/text_snippet:", "Gera arquivo Word."]
+    } 
     for w, wordKey in enumerate(wordKeys):
         if w == 0:
             val = 0
