@@ -52,23 +52,49 @@ class dialogHelp():
     def __init__(self, title):
         self.title = title
         
-    @st.dialog(title="Informações", width="medium", icon=":material/file_copy:", on_dismiss="ignore") 
+    @st.dialog(title="Informações", width="medium", icon=":material/info:", on_dismiss="ignore") 
     def helpInfo(self):
         pass
 
-    @st.dialog(title="Vídeos", width="medium", icon=":material/file_copy:", on_dismiss="ignore")
+    @st.dialog(title="Vídeos", width="medium", icon=":material/video_library:", on_dismiss="ignore")
     def helpVds(self):
         pass
         
-    @st.dialog(title="Áudios", width="medium", icon=":material/file_copy:", on_dismiss="ignore")
+    @st.dialog(title="Áudios", width="medium", icon=":material/select_to_speak:", on_dismiss="ignore")
     def helpAuds(self):
         pass
         
-    @st.dialog(title="Links", width="medium", icon=":material/file_copy:", on_dismiss="ignore")
+    @st.dialog(title="Links da _Câmara dos Deputados_ (Cota Parlamentar)", width="large", icon=":material/dataset_linked:", on_dismiss="ignore")
     def helpLinks(self):
-        pass
+        dictLinks = {
+              "url": [
+                "https://www.camara.leg.br/cota-parlamentar/",
+                "https://www2.camara.leg.br/comunicacao/assessoria-de-imprensa/guia-para-jornalistas/cota-parlamentar",
+                "https://www.camara.leg.br/cota-parlamentar/2016_Glossario_para_o_CotasNet.pdf",
+                "https://dadosabertos.camara.leg.br/swagger/api.html#staticfile", 
+                "https://www.camara.leg.br/transparencia/gastos-parlamentares/"
+              ], 
+              "info": [
+                "cota para exercício da atividade parlamentar dos Deputados Federais", 
+                "detalhes sobre a Cota Parlamentar dos Deputados Federais", 
+                "glossário para entendimento das informações da Cota Parlamentar dos Deputados Federais", 
+                "dados abertos da Cota Parlamentar dos Deputados Federais Câmara dos Deputados", 
+                "gastos dos Deputados Federais"
+              ]
+        }
+        df = pd.DataFrame(dictLinks)
+        st.dataframe(
+            df,
+            column_config={
+                "url": st.column_config.LinkColumn("🌐 link para acesso", width=540, 
+                    help="Links oficiais da Câmara dos Deputados para acesso a informações da Cota Parlamentar. "), 
+                "info": st.column_config.TextColumn("📍 informações acessíveis", 
+                    help="Discrimina o conteúdo acessível pelo usuário.")
+            },
+            hide_index=True
+        )
         
-    @st.dialog(title="Customização", width="medium", icon=":material/file_copy:", on_dismiss="ignore")
+    @st.dialog(title="Customização", width="medium", icon=":material/settings:", on_dismiss="ignore")
     def helpSetup(self):
         pass
 
@@ -1113,7 +1139,7 @@ class windowStream():
         dictButtFloat = {"Informações": ["Informações", "keyButton_info", ":material/info:", "Dá mais informações sobre o aplicativo."], 
                          "Vídeos": ["Vídeos", "keyButton_vídeo", ":material/video_library:", "Exibe vídeos sobre o aplicativo."], 
                          "Áudios": ["Áudios", "keyButton_auds", ":material/select_to_speak:", "Exibe áudios sobre o aplicativo."], 
-                         "Links": ["Links", "keyButton_links", ":material/dataset_linked:", "Exibe links úteis associados ao aplicativo."], 
+                         "Links": ["Links", "keyButton_links", ":material/dataset_linked:", "Exibe links da Câmara dos Deputados sobre Cota Parlamentar."], 
                          "Setup": ["Setup", "keyButton_setup", ":material/settings:", "Exibe opções de customização do aplicativo."],
                          "Limpeza": ["Limpeza", "keyButton_limpeza", ":material/cleaning_services:", "Limpa os dados e vai para o topo da tela."], 
                          "Saída": ["Saída", "keyButton_saída", ":material/exit_to_app:", "Sai do aplicativo."] 
@@ -1627,6 +1653,7 @@ class main():
             if memoryUsedMb > 1:
                 mensApp = "Foi extrapolado o limite de 1GB. Modifique as opções selecionadas."
                 objDisplay.mensApp(mensApp)
+                st.cache_data.clear()
             else:
                 st.session_state[wordKeys[0]] += 1
                 self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
@@ -1638,7 +1665,7 @@ class main():
 if __name__ == '__main__':
     global wordKeys, seps
     global helpPlace, textPlaceAll
-    global voicesOpts             
+    global voicesOpts            
     helpPlace = {1:[":material/date_range:", "data inicial", "Selecione a data inicial (mês e ano).", 5, 6, "ano", "mês"], 
                  2:[":material/date_range:", "data final", "Selecione a data final (mês e ano).", 7, 8, "ano", "mês"], 
                  3:[":material/flag:", "estado", "Selecione uma unidade federativa por vez", 9, "sigla"], 
