@@ -74,7 +74,7 @@ class dialogHelp():
                     }, 
                     hide_index=True
         )
-        colTask, colFunc = st.columns(2, width="stretch", gap="small", vertical_alignment="top") 
+        colTask, colFunc = st.columns(2, width="stretch", gap="large", vertical_alignment="top") 
         colTask.markdown(":material/task: Barra de tarefas", unsafe_allow_html=True, width="stretch", text_alignment="left")
         keysButt = list(dictButtFloat.keys()) 
         buttTask = [f"{dictButtFloat[key][2]} {dictButtFloat[key][0]}" for key in keysButt]
