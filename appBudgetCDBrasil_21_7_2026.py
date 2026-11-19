@@ -51,99 +51,15 @@ locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 class dialogHelp():
     def __init__(self, title):
         self.title = title
-        
-    @st.dialog(title="Informações sobre o app", width="large", icon=":material/info:", on_dismiss="ignore") 
-    def helpInfo(self):
-        dictFields = {"creator": ["Sandro Rogério Alves e SIlva"], 
-                      "font": ["Câmara dos Deputados"], 
-                      "link": ["https://dadosabertos.camara.leg.br/swagger/api.html?tab=staticfile"], 
-                      "actual": ["diária, exceto aos sábados, domingos e feriados"]
+        self.dictFields = {"creator": ["Sandro Rogério Alves e Silva"], 
+                           "font": ["Câmara dos Deputados"], 
+                           "link": ["https://dadosabertos.camara.leg.br/swagger/api.html?tab=staticfile"], 
+                           "actual": ["diária, exceto aos sábados, domingos e feriados"]
         }
-        dfFields = pd.DataFrame(dictFields)
-        st.markdown(":material/apps: Gerais", unsafe_allow_html=True, width="stretch", text_alignment="left")
-        st.dataframe(dfFields, 
-                     column_config={
-                        "creator": st.column_config.TextColumn("🧑‍💻 desenvolvedor", 
-                            help="Informa o nome completo do criador e mantenedor do aplicativo."), 
-                        "font": st.column_config.TextColumn("🏛️ órgão supridor dos dados", 
-                            help="Informa o órgão que fornece a base de dados usada no aplicativo."), 
-                        "link": st.column_config.LinkColumn("🔗 link dos dados oficiais", 
-                            help="Link oficial dos arquivos JSON usados no aplicativo."), 
-                        "actual": st.column_config.TextColumn("🗓️ atualização do aplicativo", 
-                            help="Esclarece a periodicidade de atualização do aplicativo.")
-                    }, 
-                    hide_index=True
-        )
-        colTask, colDetails, colFunc = st.columns([18, 17, 17], width="stretch", gap="small", vertical_alignment="top") 
-        colTask.markdown(":material/task: Barra de tarefas", unsafe_allow_html=True, width="stretch", text_alignment="left")
-        keysButt = list(dictButtFloat.keys()) 
-        buttTask = [f"{dictButtFloat[key][2]} {dictButtFloat[key][0]}" for key in keysButt]
-        buttObjective = ["Dá noções gerais e específicas sobre o aplicativo.", 
-                         "Exibe vídeos deste app abrangendo telas e funcionalidades.", 
-                         "Apresenta áudios com informações sobre este aplicativo.", 
-                         "Abre janela com os links da Câmara dos Deputados que contém informações sobre a Cota Parlamentar.", 
-                         "Oferece opções de customização dos resultados e das funcionalidades aplicativo.", 
-                         "Apaga todos os dados da consulta e volta ao topo do aplicativo.", 
-                         "Desativa o aplicativo."]
-        dicTasks = {"botão": buttTask, 
-                    "funcionalidade": buttObjective}
-        dfTasks = pd.DataFrame(dicTasks)
-        colTask.table(dfTasks, width="content")
-        colDetails.markdown(":material/person_search: Detalhes da consulta", unsafe_allow_html=True, width="stretch", text_alignment="left")
-        dictDetails = {"opção": [":material/folder_info:  Download"], 
-                       "Detalhes": ["""Informa diferentes dados sobre a consulta formulada, incluindo 
-                                    link, nome do arquivo (json), data de criação, data de modificação
-                                    e tamanho (em MB)."""]
-        }
-        dfDetails = pd.DataFrame(dictDetails)
-        colDetails.table(dfDetails, width="content")
-        colFunc.markdown(":material/engineering: Barra de operações", unsafe_allow_html=True, width="stretch", text_alignment="left")
-        funcKeys = list(dictButtons.keys())
-        functButt = [f"{dictButtons[key][2]} {dictButtons[key][0]}" for key in funcKeys]
-        funcObjective = ["""Exibe na tela os dados da pesquisa por data, estado e nome, usando os 
-                         dados com a formatação original da base de dados da Câmara dos Deputados.
-                         Oferece opção de baixar arquivos ZIP ou PDF.""", 
-                         """Exibe na tela os dados da pesquisa por data, estado e nome, usando os 
-                         dados com a formatação modificada dos campos marcados com asterisco.
-                         Oferece opção de baixar arquivos ZIP ou PDF.""", 
-                         """Exibe gráficos das despesas agregadas de cada parlamentar, sendo um no formato de barras verticais e outro no de pizza.""", 
-                         """Exibe os dados originais com os campos incompletos, faltantes ou formatados erroneamente na origem.""", 
-                         """Gera arquivo PDF contendo os lançamentos (gastos) de cada parlamentar acompanhados, quando for o caso , 
-                         de imagem do respectivo comprovante. """, 
-                         """Gera arquivo Word contendo os lançamentos (gastos) de cada parlamentar acompanhados, quando for o caso, 
-                         de imagem do respectivo comprovante."""]
-        dictFunc = {"botão": functButt, 
-                    "funcionalidade": funcObjective}
-        st.markdown("""
-            <style>
-                [data-testid="stTable"] td {
-                    text-align: justify !important;
-                    white-space: normal !important;
-                }
-                [data-testid="stTable"] table {
-                    width: 100%;
-                    table-layout: fixed;
-                }
-                    [data-testid="stTable"] th:first-child,
-                    [data-testid="stTable"] td:first-child {
-                        width: 30% !important; /* Ajuste a porcentagem ou use pixels (ex: 300px) */
-                }
-            </style>""", unsafe_allow_html=True
-        )        
-        dfFunc = pd.DataFrame(dictFunc)
-        colFunc.table(dfFunc, width="content")
-        
-    @st.dialog(title="Vídeos", width="medium", icon=":material/video_library:", on_dismiss="ignore")
-    def helpVds(self):
-        pass
-        
-    @st.dialog(title="Áudios", width="medium", icon=":material/select_to_speak:", on_dismiss="ignore")
-    def helpAuds(self):
-        pass
-        
-    @st.dialog(title="Links da _Câmara dos Deputados_ (Cota Parlamentar)", width="large", icon=":material/dataset_linked:", on_dismiss="ignore")
-    def helpLinks(self):
-        dictLinks = {
+        self.valFields = [value[0] for value in list(self.dictFields.values())]
+        self.aliasFields = ("desenvolvedor", "órgão supridor dos dados", "link dos dados oficiais", 
+                            "atualização do aplicativo")
+        self.dictLinks = {
               "url": [
                 "https://www.camara.leg.br/cota-parlamentar/",
                 "https://www2.camara.leg.br/comunicacao/assessoria-de-imprensa/guia-para-jornalistas/cota-parlamentar",
@@ -159,7 +75,98 @@ class dialogHelp():
                 "gastos dos Deputados Federais"
               ]
         }
-        df = pd.DataFrame(dictLinks)
+        self.buttObjective = ["Dá noções gerais e específicas sobre o aplicativo.", 
+                         "Exibe vídeos deste app abrangendo telas e funcionalidades.", 
+                         "Apresenta áudios com informações sobre este aplicativo.", 
+                         "Abre janela com os links da Câmara dos Deputados que contém informações sobre a Cota Parlamentar.", 
+                         "Oferece opções de customização dos resultados e das funcionalidades aplicativo.", 
+                         "Apaga todos os dados da consulta e volta ao topo do aplicativo.", 
+                         "Desativa o aplicativo."] 
+        self.funcObjective = ["""Exibe na tela os dados da pesquisa por data, estado e nome, usando os 
+                         dados com a formatação original da base de dados da Câmara dos Deputados.
+                         Oferece opção de baixar arquivos ZIP ou PDF.""", 
+                         """Exibe na tela os dados da pesquisa por data, estado e nome, usando os 
+                         dados com a formatação modificada dos campos marcados com asterisco.
+                         Oferece opção de baixar arquivos ZIP ou PDF.""", 
+                         """Exibe gráficos das despesas agregadas de cada parlamentar, sendo um no formato de barras verticais e outro no de pizza.""", 
+                         """Exibe os dados originais com os campos incompletos, faltantes ou formatados erroneamente na origem.""", 
+                         """Gera arquivo PDF contendo os lançamentos (gastos) de cada parlamentar acompanhados, quando for o caso , 
+                         de imagem do respectivo comprovante. """, 
+                         """Gera arquivo Word contendo os lançamentos (gastos) de cada parlamentar, acompanhados, quando for o caso, 
+                         de imagem do respectivo comprovante."""]
+        keysButt = list(dictButtFloat.keys()) 
+        buttTask = [f"{dictButtFloat[key][2]} {dictButtFloat[key][0]}" for key in keysButt]
+        self.dicTasks = {"botão": buttTask, 
+                         "funcionalidade": self.buttObjective}        
+        self.dictDetails = {"opção": [":material/folder_info:  Download"], 
+                            "Detalhes": ["""Informa diferentes dados sobre a consulta formulada, incluindo 
+                                    link, nome do arquivo (json), data de criação, data de modificação
+                                    e tamanho (em MB)."""]
+        }
+        self.configTable = """
+            <style>
+                [data-testid="stTable"] td {
+                    text-align: justify !important;
+                    white-space: normal !important;
+                }
+                [data-testid="stTable"] table {
+                    width: 100%;
+                    table-layout: fixed;
+                }
+                    [data-testid="stTable"] th:first-child,
+                    [data-testid="stTable"] td:first-child {
+                        width: 30% !important; 
+                }
+            </style>"""
+        
+    @st.dialog(title="Informações sobre o app", width="large", icon=":material/info:", on_dismiss="ignore") 
+    def helpInfo(self):
+        dfFields = pd.DataFrame(self.dictFields)
+        st.markdown(":material/apps: Gerais", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        st.dataframe(dfFields, 
+                     column_config={
+                        "creator": st.column_config.TextColumn(f"🧑‍💻 {self.aliasFields[0]}", 
+                            help="Informa o nome completo do criador e mantenedor do aplicativo."), 
+                        "font": st.column_config.TextColumn(f"🏛️ {self.aliasFields[1]}", 
+                            help="Informa o órgão que fornece a base de dados usada no aplicativo."), 
+                        "link": st.column_config.LinkColumn(f"🔗 {self.aliasFields[2]}", 
+                            help="Link oficial dos arquivos JSON usados no aplicativo."), 
+                        "actual": st.column_config.TextColumn(f"🗓️ {self.aliasFields[3]}", 
+                            help="Esclarece a periodicidade de atualização do aplicativo.")
+                    }, 
+                    hide_index=True
+        )
+        colTask, colDetails, colFunc = st.columns([18, 17, 17], width="stretch", gap="small", vertical_alignment="top") 
+        colTask.markdown(":material/task: Barra de tarefas", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        colTask.table(self.dicTasks, width="content")
+        colDetails.markdown(":material/person_search: Detalhes da consulta", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        dfDetails = pd.DataFrame(self.dictDetails)
+        colDetails.table(dfDetails, width="content")
+        colFunc.markdown(":material/engineering: Barra de operações", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        funcKeys = list(dictButtons.keys())
+        functButt = [f"{dictButtons[key][2]} {dictButtons[key][0]}" for key in funcKeys]
+        dictFunc = {"botão": functButt, 
+                    "funcionalidade": self.funcObjective}
+        st.markdown(self.configTable, unsafe_allow_html=True)        
+        dfFunc = pd.DataFrame(dictFunc)
+        colFunc.table(dfFunc, width="content")
+        
+    @st.dialog(title="Vídeos", width="medium", icon=":material/video_library:", on_dismiss="ignore")
+    def helpVds(self):
+        pass
+        
+    @st.dialog(title="Áudios", width="medium", icon=":material/select_to_speak:", on_dismiss="ignore")
+    def helpAuds(self):
+        wVals = len(self.valFields)
+        fieldVals = [f"{self.aliasFields[w]} {self.valFields[w]}" for w in range(wVals)] 
+        for field in fieldVals:
+            voice = random.choice(voicesOpts)
+            audData = asyncio.run(operationFiles(None).createAudVoice(field, voice))
+            st.audio(audData, format="audio/mp3", width="stretch")
+        
+    @st.dialog(title="Links da _Câmara dos Deputados_ (Cota Parlamentar)", width="large", icon=":material/dataset_linked:", on_dismiss="ignore")
+    def helpLinks(self):
+        df = pd.DataFrame(self.dictLinks)
         st.dataframe(
             df,
             column_config={
@@ -1430,7 +1437,8 @@ class operationFiles():
                     await asyncio.sleep(delay)
                     delay *= 1.5  
     
-    async def createAudVoice(self, text: str, voice: str) -> bytes:
+    @st.cache_data(show_spinner=False, ttl=30, max_entries=15)
+    async def createAudVoice(_self, text: str, voice: str) -> bytes:
         communicate = edge_tts.Communicate(text, voice)
         audio_buffer = io.BytesIO()
         async for chunk in communicate.stream():
