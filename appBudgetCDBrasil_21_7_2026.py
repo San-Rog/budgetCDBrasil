@@ -11,9 +11,9 @@ import psutil
 import sqlite3
 import pymupdf
 import zipfile
+import mammoth
 import asyncio
 import calendar
-import mammoth
 import edge_tts
 import matplotlib.pyplot as plt
 import plotly.express as px
@@ -59,9 +59,9 @@ class dialogHelp():
                       "link": ["https://dadosabertos.camara.leg.br/swagger/api.html?tab=staticfile"], 
                       "actual": ["diária, exceto aos sábados, domingos e feriados"]
         }
-        df = pd.DataFrame(dictFields)
+        dfFields = pd.DataFrame(dictFields)
         st.markdown(":material/apps: Gerais", unsafe_allow_html=True, width="stretch", text_alignment="left")
-        st.dataframe(df, 
+        st.dataframe(dfFields, 
                      column_config={
                         "creator": st.column_config.TextColumn("🧑‍💻 desenvolvedor", 
                             help="Informa o nome completo do criador e mantenedor do aplicativo."), 
@@ -74,7 +74,7 @@ class dialogHelp():
                     }, 
                     hide_index=True
         )
-        colTask, colFunc = st.columns(2, width="stretch", gap="large", vertical_alignment="top") 
+        colTask, colDetails, colFunc = st.columns([18, 17, 17], width="stretch", gap="small", vertical_alignment="top") 
         colTask.markdown(":material/task: Barra de tarefas", unsafe_allow_html=True, width="stretch", text_alignment="left")
         keysButt = list(dictButtFloat.keys()) 
         buttTask = [f"{dictButtFloat[key][2]} {dictButtFloat[key][0]}" for key in keysButt]
@@ -87,16 +87,17 @@ class dialogHelp():
                          "Desativa o aplicativo."]
         dicTasks = {"botão": buttTask, 
                     "funcionalidade": buttObjective}
-        colTask.table(dicTasks, width="stretch")
-        colTask.markdown(":material/person_search: detalhes da consulta", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        dfTasks = pd.DataFrame(dicTasks)
+        colTask.table(dfTasks, width="content")
+        colDetails.markdown(":material/person_search: Detalhes da consulta", unsafe_allow_html=True, width="stretch", text_alignment="left")
         dictDetails = {"opção": [":material/folder_info:  Download"], 
-                       "Detalhes": [""":material/clarify: Informa diferentes dados sobre a consulta formulada, incluindo 
+                       "Detalhes": ["""Informa diferentes dados sobre a consulta formulada, incluindo 
                                     link, nome do arquivo (json), data de criação, data de modificação
                                     e tamanho (em MB)."""]
         }
-        colTask.table(dictDetails, width="stretch")
-        colTask.space("xxsmall")
-        colFunc.markdown(":material/engineering: Conjunto de operações", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        dfDetails = pd.DataFrame(dictDetails)
+        colDetails.table(dfDetails, width="content")
+        colFunc.markdown(":material/engineering: Barra de operações", unsafe_allow_html=True, width="stretch", text_alignment="left")
         funcKeys = list(dictButtons.keys())
         functButt = [f"{dictButtons[key][2]} {dictButtons[key][0]}" for key in funcKeys]
         funcObjective = ["""Exibe na tela os dados da pesquisa por data, estado e nome, usando os 
@@ -113,7 +114,24 @@ class dialogHelp():
                          de imagem do respectivo comprovante."""]
         dictFunc = {"botão": functButt, 
                     "funcionalidade": funcObjective}
-        colFunc.table(dictFunc, width="content")
+        st.markdown("""
+            <style>
+                [data-testid="stTable"] td {
+                    text-align: justify !important;
+                    white-space: normal !important;
+                }
+                [data-testid="stTable"] table {
+                    width: 100%;
+                    table-layout: fixed;
+                }
+                    [data-testid="stTable"] th:first-child,
+                    [data-testid="stTable"] td:first-child {
+                        width: 30% !important; /* Ajuste a porcentagem ou use pixels (ex: 300px) */
+                }
+            </style>""", unsafe_allow_html=True
+        )        
+        dfFunc = pd.DataFrame(dictFunc)
+        colFunc.table(dfFunc, width="content")
         
     @st.dialog(title="Vídeos", width="medium", icon=":material/video_library:", on_dismiss="ignore")
     def helpVds(self):
