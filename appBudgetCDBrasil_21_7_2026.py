@@ -75,34 +75,39 @@ class dialogHelp():
                 "gastos dos Deputados Federais"
               ]
         }
-        self.buttObjective = ["Dá noções gerais e específicas sobre o aplicativo.", 
-                         "Exibe vídeos deste app abrangendo telas e funcionalidades.", 
-                         "Apresenta áudios com informações sobre este aplicativo.", 
-                         "Abre janela com os links da Câmara dos Deputados que contém informações sobre a Cota Parlamentar.", 
-                         "Oferece opções de customização dos resultados e das funcionalidades aplicativo.", 
-                         "Apaga todos os dados da consulta e volta ao topo do aplicativo.", 
-                         "Desativa o aplicativo."] 
+        self.taskObjective = ["Dá noções gerais e específicas sobre o aplicativo.", 
+                              "Exibe vídeos deste app abrangendo telas e funcionalidades.", 
+                              "Apresenta áudios com informações sobre este aplicativo.", 
+                              "Abre janela com os links da Câmara dos Deputados que contém informações sobre a Cota Parlamentar.", 
+                              "Oferece opções de customização dos resultados e das funcionalidades aplicativo.", 
+                              "Apaga todos os dados da consulta e volta ao topo do aplicativo.", 
+                              "Desativa o aplicativo."] 
+        funcKeys = list(dictButtons.keys())
+        self.functButt = [f"{dictButtons[key][2]} {dictButtons[key][0]}" for key in funcKeys]
         self.funcObjective = ["""Exibe na tela os dados da pesquisa por data, estado e nome, usando os 
-                         dados com a formatação original da base de dados da Câmara dos Deputados.
-                         Oferece opção de baixar arquivos ZIP ou PDF.""", 
-                         """Exibe na tela os dados da pesquisa por data, estado e nome, usando os 
-                         dados com a formatação modificada dos campos marcados com asterisco.
-                         Oferece opção de baixar arquivos ZIP ou PDF.""", 
-                         """Exibe gráficos das despesas agregadas de cada parlamentar, sendo um no formato de barras verticais e outro no de pizza.""", 
-                         """Exibe os dados originais com os campos incompletos, faltantes ou formatados erroneamente na origem.""", 
-                         """Gera arquivo PDF contendo os lançamentos (gastos) de cada parlamentar acompanhados, quando for o caso , 
-                         de imagem do respectivo comprovante. """, 
-                         """Gera arquivo Word contendo os lançamentos (gastos) de cada parlamentar, acompanhados, quando for o caso, 
-                         de imagem do respectivo comprovante."""]
+                             dados com a formatação original da base de dados da Câmara dos Deputados.
+                             Oferece opção de baixar arquivos ZIP ou PDF.""", 
+                             """Exibe na tela os dados da pesquisa por data, estado e nome, usando os 
+                             dados com a formatação modificada dos campos marcados com asterisco.
+                             Oferece opção de baixar arquivos ZIP ou PDF.""", 
+                             """Exibe gráficos das despesas agregadas de cada parlamentar, sendo um no formato de barras verticais e outro no de pizza.""", 
+                             """Exibe os dados originais com os campos incompletos, faltantes ou formatados erroneamente na origem.""", 
+                             """Gera arquivo PDF contendo os lançamentos (gastos) de cada parlamentar acompanhados, quando for o caso , 
+                             de imagem do respectivo comprovante. """, 
+                             """Gera arquivo Word contendo os lançamentos (gastos) de cada parlamentar, acompanhados, quando for o caso, 
+                             de imagem do respectivo comprovante."""]
+        self.funcDict = {"botão": self.functButt, 
+                         "funcionalidade": self.funcObjective}
         keysButt = list(dictButtFloat.keys()) 
-        buttTask = [f"{dictButtFloat[key][2]} {dictButtFloat[key][0]}" for key in keysButt]
-        self.dicTasks = {"botão": buttTask, 
-                         "funcionalidade": self.buttObjective}        
-        self.dictDetails = {"opção": [":material/folder_info:  Download"], 
-                            "Detalhes": ["""Informa diferentes dados sobre a consulta formulada, incluindo 
-                                    link, nome do arquivo (json), data de criação, data de modificação
-                                    e tamanho (em MB)."""]
-        }
+        self.taskButt = [f"{dictButtFloat[key][2]} {dictButtFloat[key][0]}" for key in keysButt]
+        self.taskDict = {"botão": self.taskButt, 
+                         "funcionalidade": self.taskObjective}        
+        self.detailsButt = [":material/folder_info: Download"]
+        self.detailsObjective = ["""Informa diferentes dados sobre a consulta formulada, incluindo 
+                                 link, nome do arquivo (json), data de criação, data de modificação
+                                 e tamanho (em MB)."""]
+        self.detailsDict = {"opção": self.detailsButt, 
+                            "Detalhes": self.detailsObjective}
         self.configTable = """
             <style>
                 [data-testid="stTable"] td {
@@ -138,32 +143,54 @@ class dialogHelp():
         )
         colTask, colDetails, colFunc = st.columns([18, 17, 17], width="stretch", gap="small", vertical_alignment="top") 
         colTask.markdown(":material/task: Barra de tarefas", unsafe_allow_html=True, width="stretch", text_alignment="left")
-        colTask.table(self.dicTasks, width="content")
+        colTask.table(self.taskDict, width="content")
         colDetails.markdown(":material/person_search: Detalhes da consulta", unsafe_allow_html=True, width="stretch", text_alignment="left")
-        dfDetails = pd.DataFrame(self.dictDetails)
+        dfDetails = pd.DataFrame(self.detailsDict)
         colDetails.table(dfDetails, width="content")
         colFunc.markdown(":material/engineering: Barra de operações", unsafe_allow_html=True, width="stretch", text_alignment="left")
-        funcKeys = list(dictButtons.keys())
-        functButt = [f"{dictButtons[key][2]} {dictButtons[key][0]}" for key in funcKeys]
-        dictFunc = {"botão": functButt, 
-                    "funcionalidade": self.funcObjective}
         st.markdown(self.configTable, unsafe_allow_html=True)        
-        dfFunc = pd.DataFrame(dictFunc)
+        dfFunc = pd.DataFrame(self.funcDict)
         colFunc.table(dfFunc, width="content")
         
     @st.dialog(title="Vídeos", width="medium", icon=":material/video_library:", on_dismiss="ignore")
     def helpVds(self):
         pass
         
-    @st.dialog(title="Áudios", width="medium", icon=":material/select_to_speak:", on_dismiss="ignore")
+    @st.dialog(title="Áudios", width="large", icon=":material/select_to_speak:", on_dismiss="ignore")
     def helpAuds(self):
-        wVals = len(self.valFields)
-        fieldVals = [f"{self.aliasFields[w]} {self.valFields[w]}" for w in range(wVals)] 
-        for field in fieldVals:
-            voice = random.choice(voicesOpts)
-            audData = asyncio.run(operationFiles(None).createAudVoice(field, voice))
-            st.audio(audData, format="audio/mp3", width="stretch")
+        colGeral, colTask, colDetails, colFunc = st.columns([5, 4, 4, 4])
+        self.colsImage(self.valFields, self.aliasFields, self.valFields, colGeral)
+        self.colsImage(self.taskButt, self.taskButt, self.taskObjective, colTask)
+        self.colsImage(self.detailsButt, self.detailsButt, self.detailsObjective, colDetails)
+        self.colsImage(self.functButt, self.functButt, self.funcObjective, colFunc) 
         
+    def streamFunc(self): 
+        for word in self.field.split(" "):
+            yield word + " "
+            time.sleep(0.02)  
+    
+    def colsImage(self, *args):
+        events = args[0]
+        buttNames = args[1]
+        buttObjective = args[2]
+        colEvent = args[3]        
+        wEvents = len(events)
+        fieldValsEvent = [f"{buttNames[w]} {buttObjective[w]}" for w in range(wEvents)] 
+        fieldValsEventStr = [f":blue[**{buttNames[w]}**]" for w in range(wEvents)] 
+        with colEvent: 
+            for f, field in enumerate(fieldValsEvent):
+                fieldStr = fieldValsEventStr[f]
+                try: 
+                    sounData = st.session_state['allSounds'][fieldStr]
+                except: 
+                    voice = random.choice(voicesOpts)
+                    sounData = asyncio.run(operationFiles(None).createAudVoice(field, voice))
+                    st.session_state['allSounds'][fieldStr] = sounData
+                colText, colSound = st.columns([6, 4])
+                self.field = fieldStr
+                colText.write_stream(self.streamFunc)          
+                colSound.audio(sounData, format="audio/mp3", width="stretch")
+    
     @st.dialog(title="Links da _Câmara dos Deputados_ (Cota Parlamentar)", width="large", icon=":material/dataset_linked:", on_dismiss="ignore")
     def helpLinks(self):
         df = pd.DataFrame(self.dictLinks)
@@ -1779,6 +1806,8 @@ if __name__ == '__main__':
             val = {}
         if wordKey not in st.session_state:
             st.session_state[wordKey] = val
+    if 'allSounds' not in st.session_state: 
+        st.session_state['allSounds'] = {}    
     seps = ["***", "&&&"]
     main()   
 #https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
