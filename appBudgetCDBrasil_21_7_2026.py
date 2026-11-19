@@ -108,6 +108,9 @@ class dialogHelp():
                                  e tamanho (em MB)."""]
         self.detailsDict = {"opção": self.detailsButt, 
                             "Detalhes": self.detailsObjective}
+        self.titles = [":material/apps: Gerais", ":material/task: Barra de tarefas", 
+                       ":material/person_search: Detalhes da consulta", 
+                       ":material/engineering: Barra de operações"]
         self.configTable = """
             <style>
                 [data-testid="stTable"] td {
@@ -127,7 +130,7 @@ class dialogHelp():
     @st.dialog(title="Informações sobre o app", width="large", icon=":material/info:", on_dismiss="ignore") 
     def helpInfo(self):
         dfFields = pd.DataFrame(self.dictFields)
-        st.markdown(":material/apps: Gerais", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        st.markdown(self.titles[0], unsafe_allow_html=True, width="stretch", text_alignment="left")
         st.dataframe(dfFields, 
                      column_config={
                         "creator": st.column_config.TextColumn(f"🧑‍💻 {self.aliasFields[0]}", 
@@ -142,12 +145,12 @@ class dialogHelp():
                     hide_index=True
         )
         colTask, colDetails, colFunc = st.columns([18, 17, 17], width="stretch", gap="small", vertical_alignment="top") 
-        colTask.markdown(":material/task: Barra de tarefas", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        colTask.markdown(self.titles[1], unsafe_allow_html=True, width="stretch", text_alignment="left")
         colTask.table(self.taskDict, width="content")
-        colDetails.markdown(":material/person_search: Detalhes da consulta", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        colDetails.markdown(self.titles[2], unsafe_allow_html=True, width="stretch", text_alignment="left")
         dfDetails = pd.DataFrame(self.detailsDict)
         colDetails.table(dfDetails, width="content")
-        colFunc.markdown(":material/engineering: Barra de operações", unsafe_allow_html=True, width="stretch", text_alignment="left")
+        colFunc.markdown(self.titles[3], unsafe_allow_html=True, width="stretch", text_alignment="left")
         st.markdown(self.configTable, unsafe_allow_html=True)        
         dfFunc = pd.DataFrame(self.funcDict)
         colFunc.table(dfFunc, width="content")
@@ -158,11 +161,15 @@ class dialogHelp():
         
     @st.dialog(title="Áudios", width="large", icon=":material/select_to_speak:", on_dismiss="ignore")
     def helpAuds(self):
-        colGeral, colTask, colDetails, colFunc = st.columns([5, 4, 4, 4])
-        self.colsImage(self.valFields, self.aliasFields, self.valFields, colGeral)
-        self.colsImage(self.taskButt, self.taskButt, self.taskObjective, colTask)
-        self.colsImage(self.detailsButt, self.detailsButt, self.detailsObjective, colDetails)
-        self.colsImage(self.functButt, self.functButt, self.funcObjective, colFunc) 
+        self.nSounds = len(st.session_state['allSounds'])
+        colGeral, colTask, colDetails, colFunc = st.columns(4, vertical_alignment="top", width="stretch", 
+                                                            border=False)
+        self.colsImage(self.valFields, self.aliasFields, self.valFields, colGeral, 0)
+        self.colsImage(self.taskButt, self.taskButt, self.taskObjective, colTask, 1)
+        self.colsImage(self.detailsButt, self.detailsButt, self.detailsObjective, colDetails, 2)
+        self.colsImage(self.functButt, self.functButt, self.funcObjective, colFunc, 3) 
+        if self.nSounds == 0: 
+            self.msg.toast("Concluído com sucesso!", icon="✅")
         
     def streamFunc(self): 
         for word in self.field.split(" "):
@@ -173,11 +180,15 @@ class dialogHelp():
         events = args[0]
         buttNames = args[1]
         buttObjective = args[2]
-        colEvent = args[3]        
+        colEvent = args[3] 
+        pos = args[4]
         wEvents = len(events)
+        if self.nSounds == 0:
+            self.msg = st.toast(f"Gravando áudios {self.titles[pos]}", icon="⏳")
         fieldValsEvent = [f"{buttNames[w]} {buttObjective[w]}" for w in range(wEvents)] 
         fieldValsEventStr = [f":blue[**{buttNames[w]}**]" for w in range(wEvents)] 
         with colEvent: 
+            st.markdown(self.titles[pos], unsafe_allow_html=True, width="stretch", text_alignment="left")
             for f, field in enumerate(fieldValsEvent):
                 fieldStr = fieldValsEventStr[f]
                 try: 
@@ -186,7 +197,7 @@ class dialogHelp():
                     voice = random.choice(voicesOpts)
                     sounData = asyncio.run(operationFiles(None).createAudVoice(field, voice))
                     st.session_state['allSounds'][fieldStr] = sounData
-                colText, colSound = st.columns([6, 4])
+                colText, colSound = st.columns([6, 5], vertical_alignment="center", width="stretch")
                 self.field = fieldStr
                 colText.write_stream(self.streamFunc)          
                 colSound.audio(sounData, format="audio/mp3", width="stretch")
