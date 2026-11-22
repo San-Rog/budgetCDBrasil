@@ -167,19 +167,20 @@ class dialogHelp():
         else:
             vdsFiles = [file for file in os.listdir(dirVds)]
         for t, tab in enumerate(tabsName): 
-            with tab:
-                nameTab = allTabs[t]
-                st.markdown(":red[**nameTab**]", unsafe_allow_html=True, text_alignment="center")
-                nameTabRe = nameTab.split()[1].lower()
-                nameTabFile = f"{nameTabRe}.webm"
-                try:
-                    pos = vdsFiles.index(nameTabFile)
-                    if pos >= 0:
-                        vdsFile = open(os.path.join(dirVds, vdsFiles[pos]), "rb")
-                        vdsBytes = vdsFile.read()
-                        st.video(vdsBytes, width="stretch")
-                except: 
-                    pass
+            with st.container(border=True)
+                with tab:
+                    nameTab = allTabs[t]
+                    st.markdown(f":red[**{nameTab}**]", unsafe_allow_html=True, text_alignment="center")
+                    nameTabRe = nameTab.split()[1].lower()
+                    nameTabFile = f"{nameTabRe}.webm"
+                    try:
+                        pos = vdsFiles.index(nameTabFile)
+                        if pos >= 0:
+                            vdsFile = open(os.path.join(dirVds, vdsFiles[pos]), "rb")
+                            vdsBytes = vdsFile.read()
+                            st.video(vdsBytes, width="stretch")
+                    except: 
+                        pass
                     
     @st.dialog(title="Áudios sobre o aplicativo", width="large", icon=":material/select_to_speak:", on_dismiss="ignore")
     def helpAuds(self):
