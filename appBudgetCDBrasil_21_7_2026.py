@@ -1735,7 +1735,7 @@ class main():
             self.dirDbZsdt = self.dirDbZsdtGit
             fileTxt = r'fileQuotas/files_json_zip.txt'
             fileCss = 'configCotasCd.css'
-            st.session_state[addKeys[2]] = r'/allDirs'
+            st.session_state[addKeys[2]] = r'budgetCDBrasil/allDirs'
             self.fileParty = 'partys.txt'
         with open(fileTxt, 'r', encoding='utf-8') as f:
             readTxt = f.readlines()
