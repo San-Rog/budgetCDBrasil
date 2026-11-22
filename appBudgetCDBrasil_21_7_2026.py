@@ -167,7 +167,7 @@ class dialogHelp():
         else:
             vdsFiles = [file for file in os.listdir(dirVds)]
         for t, tab in enumerate(tabsName): 
-            with st.container(border=True)
+            with st.container(border=True):
                 with tab:
                     nameTab = allTabs[t]
                     st.markdown(f":red[**{nameTab}**]", unsafe_allow_html=True, text_alignment="center")
