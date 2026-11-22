@@ -155,13 +155,22 @@ class dialogHelp():
         dfFunc = pd.DataFrame(self.funcDict)
         colFunc.table(dfFunc, width="content")
         
-    @st.dialog(title="Vídeos", width="medium", icon=":material/video_library:", on_dismiss="ignore")
+    @st.dialog(title="Vídeos", width="large", icon=":material/video_library:", on_dismiss="ignore")
     def helpVds(self):
-        pass
+        allTabs = self.taskButt + self.detailsButt + self.functButt
+        tabsName = st.tabs(allTabs, width="stretch")
+        for t, tab in enumerate(tabsName): 
+            with tab:
+                st.subheader(allTabs[t])
+                if t == 0: 
+                    fileVds = os.path.join(st.session_state[addKeys[2]], "vds_info.webm")
+                    video_file = open(fileVds, "rb")
+                    video_bytes = video_file.read()
+                    st.video(video_bytes, width="stretch")
         
-    @st.dialog(title="Áudios", width="large", icon=":material/select_to_speak:", on_dismiss="ignore")
+    @st.dialog(title="Áudios sobre o aplicativo", width="large", icon=":material/select_to_speak:", on_dismiss="ignore")
     def helpAuds(self):
-        self.nSounds = len(st.session_state['allSounds'])
+        self.nSounds = len(st.session_state[addKeys[0]])
         colGeral, colTask, colDetails, colFunc = st.columns(4, vertical_alignment="top", width="stretch", 
                                                             border=False)
         self.colsImage(self.valFields, self.aliasFields, self.valFields, colGeral, 0)
@@ -169,7 +178,7 @@ class dialogHelp():
         self.colsImage(self.detailsButt, self.detailsButt, self.detailsObjective, colDetails, 2)
         self.colsImage(self.functButt, self.functButt, self.funcObjective, colFunc, 3) 
         if self.nSounds == 0: 
-            self.msg.toast("Concluído com sucesso!", icon="✅")
+            self.msg.toast("Gravação e exibição concluídas com sucesso!", icon="✅")
         
     def streamFunc(self): 
         for word in self.field.split(" "):
@@ -184,7 +193,10 @@ class dialogHelp():
         pos = args[4]
         wEvents = len(events)
         if self.nSounds == 0:
-            self.msg = st.toast(f"Gravando áudios {self.titles[pos]}", icon="⏳")
+            if pos == 2:
+                self.msg = st.toast(f"Gerando áudio **{self.titles[pos]}**", icon="⏳")
+            else:
+                self.msg = st.toast(f"Gerando áudios **{self.titles[pos]}**", icon="⏳", duration="long")
         fieldValsEvent = [f"{buttNames[w]} {buttObjective[w]}" for w in range(wEvents)] 
         fieldValsEventStr = [f":blue[**{buttNames[w]}**]" for w in range(wEvents)] 
         with colEvent: 
@@ -192,11 +204,11 @@ class dialogHelp():
             for f, field in enumerate(fieldValsEvent):
                 fieldStr = fieldValsEventStr[f]
                 try: 
-                    sounData = st.session_state['allSounds'][fieldStr]
+                    sounData = st.session_state[addKeys[0]][fieldStr]
                 except: 
                     voice = random.choice(voicesOpts)
                     sounData = asyncio.run(operationFiles(None).createAudVoice(field, voice))
-                    st.session_state['allSounds'][fieldStr] = sounData
+                    st.session_state[addKeys[0]][fieldStr] = sounData
                 colText, colSound = st.columns([6, 5], vertical_alignment="center", width="stretch")
                 self.field = fieldStr
                 colText.write_stream(self.streamFunc)          
@@ -1718,11 +1730,13 @@ class main():
             self.dirDbZsdt = self.dirDbZsdtSt
             fileTxt = r'C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_integration\files_json_zip.txt'
             fileCss = r'C:\Users\ACER\Documents\css\configCotasCd.css'
+            st.session_state[addKeys[2]] = r'C:\Users\ACER\Documents\css'
             self.fileParty = r'C:\Users\ACER\Documents\css\partys.txt'
         else:
             self.dirDbZsdt = self.dirDbZsdtGit
             fileTxt = r'fileQuotas/files_json_zip.txt'
             fileCss = 'configCotasCd.css'
+            st.session_state[addKeys[2]] = r'budgetCDBrasil/allDirs/'
             self.fileParty = 'partys.txt'
         with open(fileTxt, 'r', encoding='utf-8') as f:
             readTxt = f.readlines()
@@ -1773,7 +1787,7 @@ if __name__ == '__main__':
     global wordKeys, seps
     global helpPlace, textPlaceAll
     global voicesOpts, dictButtFloat 
-    global dictButtons
+    global dictButtons, addKeys
     helpPlace = {1:[":material/date_range:", "data inicial", "Selecione a data inicial (mês e ano).", 5, 6, "ano", "mês"], 
                  2:[":material/date_range:", "data final", "Selecione a data final (mês e ano).", 7, 8, "ano", "mês"], 
                  3:[":material/flag:", "estado", "Selecione uma unidade federativa por vez", 9, "sigla"], 
@@ -1799,7 +1813,8 @@ if __name__ == '__main__':
                    "tela_errores": ["análise", f"{keyButt}Errores", ":material/category:", "Exibe, analisa e classifica os dados originais da Câmara Federal."],
                    "tela_pdf": ["pdf", f"{keyButt}Pdf", ":material/picture_as_pdf:", "Gera arquivo PDF."], 
                    "tela_word": ["word", f"{keyButt}Word", ":material/text_snippet:", "Gera arquivo Word."]
-    } 
+    }
+    addKeys = ['allSounds', 'fieldSel', 'dirAllVds']    
     for w, wordKey in enumerate(wordKeys):
         if w == 0:
             val = 0
@@ -1817,8 +1832,12 @@ if __name__ == '__main__':
             val = {}
         if wordKey not in st.session_state:
             st.session_state[wordKey] = val
-    if 'allSounds' not in st.session_state: 
-        st.session_state['allSounds'] = {}    
+    for a, add in enumerate(addKeys):
+        if add not in st.session_state: 
+            if a in [0, 1]: 
+                st.session_state[add] = {}  
+            else: 
+                st.session_state[add] = "" 
     seps = ["***", "&&&"]
     main()   
 #https://budgetcdbrasil-eh29nz9fmk7bkspyv6w3iv.streamlit.app/
