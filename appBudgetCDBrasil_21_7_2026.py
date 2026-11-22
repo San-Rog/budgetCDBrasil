@@ -166,11 +166,10 @@ class dialogHelp():
             vdsFiles = [f.name for f in pathVds.iterdir()]
         else:
             vdsFiles = [file for file in os.listdir(dirVds)]
-        st.write(vdsFiles)
         for t, tab in enumerate(tabsName): 
             with tab:
                 nameTab = allTabs[t]
-                st.subheader(nameTab)
+                st.markdown(":red[**nameTab**]", unsafe_allow_html=True, text_alignment="center")
                 nameTabRe = nameTab.split()[1].lower()
                 nameTabFile = f"{nameTabRe}.webm"
                 try:
