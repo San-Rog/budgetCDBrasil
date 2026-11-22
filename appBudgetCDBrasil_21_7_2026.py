@@ -23,6 +23,7 @@ import pandas as pd
 from gtts import gTTS
 import streamlit as st
 import zstandard as zstd
+from pathlib import Path
 from datetime import date
 from pypdf import PdfReader, PdfWriter
 from io import BytesIO
@@ -160,8 +161,12 @@ class dialogHelp():
         allTabs = taskButtRedux + self.detailsButt + self.functButt
         tabsName = st.tabs(allTabs, width="stretch", default=None)
         dirVds = st.session_state[addKeys[2]]
-        st.write(dirVds)
-        vdsFiles = [file for file in os.listdir(dirVds)]
+        if dirVds == 'allDirs': 
+            pathVds = Path(dirVds)
+            vdsFiles = [f.name for f in pathVds.iterdir()]
+        else:
+            vdsFiles = [file for file in os.listdir(dirVds)]
+        st.write(vdsFiles)
         for t, tab in enumerate(tabsName): 
             with tab:
                 nameTab = allTabs[t]
@@ -1736,7 +1741,7 @@ class main():
             self.dirDbZsdt = self.dirDbZsdtGit
             fileTxt = r'fileQuotas/files_json_zip.txt'
             fileCss = 'configCotasCd.css'
-            st.session_state[addKeys[2]] = r'budgetCDBrasil/allDirs'
+            st.session_state[addKeys[2]] = 'allDirs'
             self.fileParty = 'partys.txt'
         with open(fileTxt, 'r', encoding='utf-8') as f:
             readTxt = f.readlines()
