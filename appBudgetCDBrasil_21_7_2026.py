@@ -156,18 +156,26 @@ class dialogHelp():
         
     @st.dialog(title="Vídeos", width="large", icon=":material/video_library:", on_dismiss="ignore")
     def helpVds(self):
-        allTabs = self.taskButt + self.detailsButt + self.functButt
-        tabsName = st.tabs(allTabs, width="stretch")
-        #for t, tab in enumerate(tabsName): 
-        #    with tab:
-        #        st.subheader(allTabs[t])
-        #        if t == 0: 
-        #            fileVds = os.path.join(st.session_state[addKeys[2]], "vds_info.webm")
-        #            video_file = open(fileVds, "rb")
-        #            video_bytes = video_file.read()
-        #            st.video(video_bytes, width="stretch")
-        pass
-        
+        taskButtRedux = self.taskButt[:-1]
+        allTabs = taskButtRedux + self.detailsButt + self.functButt
+        tabsName = st.tabs(allTabs, width="stretch", default=None)
+        dirVds = st.session_state[addKeys[2]]
+        vdsFiles = [file for file in os.listdir(dirVds)]
+        for t, tab in enumerate(tabsName): 
+            with tab:
+                nameTab = allTabs[t]
+                st.subheader(nameTab)
+                nameTabRe = nameTab.split()[1].lower()
+                nameTabFile = f"{nameTabRe}.webm"
+                try:
+                    pos = vdsFiles.index(nameTabFile)
+                    if pos >= 0:
+                        vdsFile = open(os.path.join(dirVds, vdsFiles[pos]), "rb")
+                        vdsBytes = vdsFile.read()
+                        st.video(vdsBytes, width="stretch")
+                except: 
+                    pass
+                    
     @st.dialog(title="Áudios sobre o aplicativo", width="large", icon=":material/select_to_speak:", on_dismiss="ignore")
     def helpAuds(self):
         self.nSounds = len(st.session_state[addKeys[0]])
