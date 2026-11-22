@@ -160,6 +160,7 @@ class dialogHelp():
         allTabs = taskButtRedux + self.detailsButt + self.functButt
         tabsName = st.tabs(allTabs, width="stretch", default=None)
         dirVds = st.session_state[addKeys[2]]
+        st.write(dirVds)
         vdsFiles = [file for file in os.listdir(dirVds)]
         for t, tab in enumerate(tabsName): 
             with tab:
