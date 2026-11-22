@@ -79,7 +79,6 @@ class dialogHelp():
                               "Exibe vídeos deste app abrangendo telas e funcionalidades.", 
                               "Apresenta áudios com informações sobre este aplicativo.", 
                               "Abre janela com os links da Câmara dos Deputados que contém informações sobre a Cota Parlamentar.", 
-                              "Oferece opções de customização dos resultados e das funcionalidades aplicativo.", 
                               "Apaga todos os dados da consulta e volta ao topo do aplicativo.", 
                               "Desativa o aplicativo."] 
         funcKeys = list(dictButtons.keys())
@@ -157,16 +156,17 @@ class dialogHelp():
         
     @st.dialog(title="Vídeos", width="large", icon=":material/video_library:", on_dismiss="ignore")
     def helpVds(self):
-        allTabs = self.taskButt + self.detailsButt + self.functButt
-        tabsName = st.tabs(allTabs, width="stretch")
-        for t, tab in enumerate(tabsName): 
-            with tab:
-                st.subheader(allTabs[t])
-                if t == 0: 
-                    fileVds = os.path.join(st.session_state[addKeys[2]], "vds_info.webm")
-                    video_file = open(fileVds, "rb")
-                    video_bytes = video_file.read()
-                    st.video(video_bytes, width="stretch")
+        #allTabs = self.taskButt + self.detailsButt + self.functButt
+        #tabsName = st.tabs(allTabs, width="stretch")
+        #for t, tab in enumerate(tabsName): 
+        #    with tab:
+        #        st.subheader(allTabs[t])
+        #        if t == 0: 
+        #            fileVds = os.path.join(st.session_state[addKeys[2]], "vds_info.webm")
+        #            video_file = open(fileVds, "rb")
+        #            video_bytes = video_file.read()
+        #            st.video(video_bytes, width="stretch")
+        pass
         
     @st.dialog(title="Áudios sobre o aplicativo", width="large", icon=":material/select_to_speak:", on_dismiss="ignore")
     def helpAuds(self):
@@ -1286,8 +1286,6 @@ class windowStream():
             case 3: 
                 dialogHelp(self.keyButtFloat[item]).helpLinks()
             case 4:
-                dialogHelp(self.keyButtFloat[item]).helpSetup()            
-            case 5:
                 dictVal = helpPlace[1]
                 scroll_to_element(wordKeys[dictVal[3]])
                 st.session_state[wordKeys[5]] = None
@@ -1802,7 +1800,6 @@ if __name__ == '__main__':
                      "Vídeos": ["Vídeos", "keyButton_vídeo", ":material/video_library:", "Exibe vídeos sobre o aplicativo."], 
                      "Áudios": ["Áudios", "keyButton_auds", ":material/select_to_speak:", "Exibe áudios sobre o aplicativo."], 
                      "Links": ["Links", "keyButton_links", ":material/dataset_linked:", "Exibe links da Câmara dos Deputados sobre Cota Parlamentar."], 
-                     "Setup": ["Setup", "keyButton_setup", ":material/settings:", "Exibe opções de customização do aplicativo."],
                      "Limpeza": ["Limpeza", "keyButton_limpeza", ":material/cleaning_services:", "Limpa os dados e vai para o topo da tela."], 
                      "Saída": ["Saída", "keyButton_saída", ":material/exit_to_app:", "Sai do aplicativo."] 
                     }
