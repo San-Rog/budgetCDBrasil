@@ -156,8 +156,8 @@ class dialogHelp():
         
     @st.dialog(title="Vídeos", width="large", icon=":material/video_library:", on_dismiss="ignore")
     def helpVds(self):
-        #allTabs = self.taskButt + self.detailsButt + self.functButt
-        #tabsName = st.tabs(allTabs, width="stretch")
+        allTabs = self.taskButt + self.detailsButt + self.functButt
+        tabsName = st.tabs(allTabs, width="stretch")
         #for t, tab in enumerate(tabsName): 
         #    with tab:
         #        st.subheader(allTabs[t])
@@ -177,8 +177,6 @@ class dialogHelp():
         self.colsImage(self.taskButt, self.taskButt, self.taskObjective, colTask, 1)
         self.colsImage(self.detailsButt, self.detailsButt, self.detailsObjective, colDetails, 2)
         self.colsImage(self.functButt, self.functButt, self.funcObjective, colFunc, 3) 
-        if self.nSounds == 0: 
-            self.msg.toast("Gravação e exibição concluídas com sucesso!", icon="✅")
         
     def streamFunc(self): 
         for word in self.field.split(" "):
@@ -192,11 +190,6 @@ class dialogHelp():
         colEvent = args[3] 
         pos = args[4]
         wEvents = len(events)
-        if self.nSounds == 0:
-            if pos == 2:
-                self.msg = st.toast(f"Gerando áudio **{self.titles[pos]}**", icon="⏳")
-            else:
-                self.msg = st.toast(f"Gerando áudios **{self.titles[pos]}**", icon="⏳", duration="long")
         fieldValsEvent = [f"{buttNames[w]} {buttObjective[w]}" for w in range(wEvents)] 
         fieldValsEventStr = [f":blue[**{buttNames[w]}**]" for w in range(wEvents)] 
         with colEvent: 
@@ -1728,7 +1721,7 @@ class main():
             self.dirDbZsdt = self.dirDbZsdtSt
             fileTxt = r'C:\Users\ACER\Desktop\Ecossistema_Câmara_dos_Deputados\down_CD_integration\files_json_zip.txt'
             fileCss = r'C:\Users\ACER\Documents\css\configCotasCd.css'
-            st.session_state[addKeys[2]] = r'C:\Users\ACER\Documents\css'
+            st.session_state[addKeys[2]] = r'C:\Users\ACER\Documents\vídeos_budget'
             self.fileParty = r'C:\Users\ACER\Documents\css\partys.txt'
         else:
             self.dirDbZsdt = self.dirDbZsdtGit
