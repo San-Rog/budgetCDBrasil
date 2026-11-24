@@ -127,7 +127,7 @@ class dialogHelp():
                 }
             </style>"""
         
-    @st.dialog(title="_Informações_ sobre o aplicativo", width="large", icon=":material/info:", on_dismiss="ignore") 
+    @st.dialog(title="Informações sobre o app", width="large", icon=":material/info:", on_dismiss="ignore") 
     def helpInfo(self):
         dfFields = pd.DataFrame(self.dictFields)
         st.markdown(self.titles[0], unsafe_allow_html=True, width="stretch", text_alignment="left")
@@ -155,7 +155,7 @@ class dialogHelp():
         dfFunc = pd.DataFrame(self.funcDict)
         colFunc.table(dfFunc, width="content")
         
-    @st.dialog(title="_Vídeos_ sobre o aplicativo", width="large", icon=":material/video_library:", on_dismiss="ignore")
+    @st.dialog(title="Vídeos", width="large", icon=":material/video_library:", on_dismiss="ignore")
     def helpVds(self):
         taskButtRedux = self.taskButt[:-1]
         allTabs = taskButtRedux + self.detailsButt + self.functButt
@@ -182,7 +182,7 @@ class dialogHelp():
                 except: 
                     pass
                     
-    @st.dialog(title="_Áudios_ sobre o aplicativo", width="large", icon=":material/select_to_speak:", on_dismiss="ignore")
+    @st.dialog(title="Áudios sobre o aplicativo", width="large", icon=":material/select_to_speak:", on_dismiss="ignore")
     def helpAuds(self):
         self.nSounds = len(st.session_state[addKeys[0]])
         colGeral, colTask, colDetails, colFunc = st.columns(4, vertical_alignment="top", width="stretch", 
@@ -1779,6 +1779,7 @@ class main():
                 mensApp = "Foi extrapolado o limite de 1GB. Modifique as opções selecionadas."
                 objDisplay.mensApp(mensApp)
                 st.cache_data.clear()
+                st.rerun()
             else:
                 st.session_state[wordKeys[0]] += 1
                 self.sqlRead = objOperat.readFileSqlZsdt(self.fileDbZsdt, self.fileDb)
