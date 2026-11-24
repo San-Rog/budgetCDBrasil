@@ -250,8 +250,7 @@ class graphics():
         expense = self.data[cols[7]].tolist()
         value = self.data[cols[-1]].tolist()
         dictExpVal = {}
-        symbs = [":material/bar_chart:", ":material/storage:", 
-                 ":material/pie_chart:", ":material/donut_small:"]
+        symbs = [":material/bar_chart:", ":material/pie_chart:"]
         for e, exp in enumerate(expense):
             name = exp
             val = value[e]
